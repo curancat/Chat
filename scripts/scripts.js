@@ -101,7 +101,12 @@ function updateNavButtons(isLoggedIn) {
         if (createPostBtn) createPostBtn.style.display = 'block';
         if (openChatBtn) openChatBtn.style.display = 'block';
         if (openNotificationsBtn) openNotificationsBtn.style.display = 'block';
-        if (auth.currentUser) setupNewActivityListener(auth.currentUser.uid);
+        // Removido setupNewActivityListener aqui
+        if (notificationCountSpan) {
+            notificationCountSpan.textContent = '0'; // Zera o contador
+            notificationCountSpan.style.display = 'none'; // Esconde o contador
+        }
+        if (openNotificationsBtn) openNotificationsBtn.classList.remove('new-activity-alert'); // Remove o alerta visual
     } else {
         if (loginBtn) loginBtn.style.display = 'block';
         if (registerBtn) registerBtn.style.display = 'block';
@@ -144,11 +149,15 @@ if (viewFeedBtn) viewFeedBtn.addEventListener('click', () => {
     loadPosts();
 });
 
+// Listener simplificado para o botão de Notificações
 if (openNotificationsBtn) openNotificationsBtn.addEventListener('click', () => {
     hideAllForms();
     if (notificationsSection) notificationsSection.classList.add('active');
-    loadNewActivityFeed();
-    markLastViewedAsCurrent();
+    if (notificationsList) {
+        notificationsList.innerHTML = '<p>As notificações estão temporariamente desativadas.</p>';
+    }
+    if (notificationCountSpan) notificationCountSpan.textContent = '0'; // Zera o contador ao abrir
+    if (openNotificationsBtn) openNotificationsBtn.classList.remove('new-activity-alert'); // Remove o alerta visual
 });
 
 
@@ -180,8 +189,8 @@ if (registerSubmit) registerSubmit.addEventListener("click", () => {
             return setDoc(doc(db, "users", cred.user.uid), {
                 username,
                 email,
-                lastViewedActivities: serverTimestamp()
-            }, { merge: true }); // Use merge para não sobrescrever se o doc já existir
+                // Removido lastViewedActivities para simplificar
+            }, { merge: true });
         })
         .then(() => {
             showMessage(registerMessage, "Cadastro realizado com sucesso!");
@@ -210,7 +219,6 @@ onAuthStateChanged(auth, (user) => {
     updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        // Garante que uma seção é mostrada se o usuário já estiver logado
         const anyFormActive = [loginFormContainer, registerFormContainer, createPostSection, chatSection, feedSection, notificationsSection].some(el => el && el.classList.contains('active'));
         if (!anyFormActive) {
             hideAllForms();
@@ -353,12 +361,12 @@ function loadComments(postId, commentsListElement) {
 // --- Carregar Posts (Feed) ---
 function loadPosts() {
     if (!postsContainer) return;
-    postsContainer.innerHTML = ''; // Limpa antes de carregar
+    postsContainer.innerHTML = '';
 
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
-        if (!postsContainer) return; // Verifica novamente caso o elemento tenha sido removido
-        postsContainer.innerHTML = ''; // Limpa novamente para atualizações em tempo real
+        if (!postsContainer) return;
+        postsContainer.innerHTML = '';
         snapshot.forEach((doc) => {
             const post = doc.data();
             const postId = doc.id;
@@ -474,12 +482,15 @@ async function loadChatUsers() {
 }
 
 function listenForChatMessages(user1Id, user2Id) {
-    if (!chatMessagesDisplay) return null; // Retorna null se o elemento não existir
+    if (!chatMessagesDisplay) {
+        console.error("chatMessagesDisplay não encontrado, não é possível configurar o listener de chat.");
+        return null;
+    }
 
     const chatCollectionRef = collection(db, "privateChats");
 
     const q1 = query(chatCollectionRef,
-        where("senderId", "==", user1Id),
+        where("senderId", "==", user1),
         where("recipientId", "==", user2Id),
         orderBy("timestamp", "asc")
     );
@@ -489,28 +500,40 @@ function listenForChatMessages(user1Id, user2Id) {
         orderBy("timestamp", "asc")
     );
 
-    const unsubscribe1 = onSnapshot(q1, (snapshot1) => {
-        const unsubscribe2 = onSnapshot(q2, (snapshot2) => {
-            const allMessages = [];
-            snapshot1.forEach(doc => allMessages.push(doc.data()));
-            snapshot2.forEach(doc => allMessages.push(doc.data()));
-
-            allMessages.sort((a, b) => {
-                const timestampA = a.timestamp?.toDate() || new Date(0);
-                const timestampB = b.timestamp?.toDate() || new Date(0);
-                return timestampA - timestampB;
-            });
-
-            chatMessagesDisplay.innerHTML = '';
-            allMessages.forEach(message => {
-                displayChatMessage(message);
-            });
-            chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
+    // Usa Promise.all para combinar os snapshots de ambos os queries
+    const combinedUnsubscribe = onSnapshot(query(collection(db, "privateChats")), async (overallSnapshot) => {
+        const allMessages = [];
+        const messagesFromQ1 = overallSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return (data.senderId === user1Id && data.recipientId === user2Id);
         });
-        return unsubscribe2;
+        const messagesFromQ2 = overallSnapshot.docs.filter(doc => {
+            const data = doc.data();
+            return (data.senderId === user2Id && data.recipientId === user1Id);
+        });
+
+        messagesFromQ1.forEach(doc => allMessages.push(doc.data()));
+        messagesFromQ2.forEach(doc => allMessages.push(doc.data()));
+
+        allMessages.sort((a, b) => {
+            const timestampA = a.timestamp?.toDate() || new Date(0);
+            const timestampB = b.timestamp?.toDate() || new Date(0);
+            return timestampA - timestampB;
+        });
+
+        chatMessagesDisplay.innerHTML = '';
+        allMessages.forEach(message => {
+            displayChatMessage(message);
+        });
+        chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
+    }, (error) => {
+        console.error("Erro ao ouvir por mensagens de chat:", error);
+        if (chatMessagesDisplay) chatMessagesDisplay.innerHTML = '<p style="color:red;">Erro ao carregar mensagens do chat.</p>';
     });
-    return unsubscribe1;
+
+    return combinedUnsubscribe;
 }
+
 
 function displayChatMessage(message) {
     if (!chatMessagesDisplay) return;
@@ -584,246 +607,8 @@ if (chatSendMessageBtn) chatSendMessageBtn.addEventListener("click", async () =>
     }
 });
 
-// --- Funções de Feed de Novidades ---
-
-let unsubscribeNewActivity = null;
-
-async function setupNewActivityListener(userId) {
-    if (unsubscribeNewActivity) {
-        unsubscribeNewActivity();
-    }
-    if (!notificationCountSpan || !openNotificationsBtn) return;
-
-    const userRef = doc(db, "users", userId);
-    let lastViewedActivities = new Date(0); // Padrão para pegar tudo se não encontrar
-
-    try {
-        const userDocSnap = await getDoc(userRef);
-        if (userDocSnap.exists() && userDocSnap.data().lastViewedActivities) {
-            lastViewedActivities = userDocSnap.data().lastViewedActivities.toDate();
-        } else {
-            // Se o documento do usuário não tiver lastViewedActivities, defina um inicial
-            await setDoc(userRef, { lastViewedActivities: serverTimestamp() }, { merge: true });
-            lastViewedActivities = new Date(); // Para o cálculo imediato
-        }
-    } catch (error) {
-        console.error("Erro ao obter lastViewedActivities do usuário:", error);
-        // Continua com lastViewedActivities como new Date(0)
-    }
-
-    const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    const messagesQuery = query(collection(db, "privateChats"),
-        where("recipientId", "==", userId),
-        orderBy("timestamp", "desc")
-    );
-
-    const unsubscribePosts = onSnapshot(postsQuery, (postsSnapshot) => {
-        const unsubscribeMessages = onSnapshot(messagesQuery, (messagesSnapshot) => {
-            let newPostsCount = 0;
-            postsSnapshot.forEach((postDoc) => {
-                const postTimestamp = postDoc.data().timestamp ? postDoc.data().timestamp.toDate() : new Date();
-                if (postTimestamp > lastViewedActivities) {
-                    newPostsCount++;
-                }
-            });
-
-            let newMessagesCount = 0;
-            messagesSnapshot.forEach((msgDoc) => {
-                const msgTimestamp = msgDoc.data().timestamp ? msgDoc.data().timestamp.toDate() : new Date();
-                if (msgTimestamp > lastViewedActivities) {
-                    newMessagesCount++;
-                }
-            });
-
-            const totalNewActivityCount = newPostsCount + newMessagesCount;
-
-            notificationCountSpan.textContent = totalNewActivityCount;
-            if (totalNewActivityCount > 0) {
-                notificationCountSpan.style.display = 'inline-block';
-                openNotificationsBtn.classList.add('new-activity-alert');
-            } else {
-                notificationCountSpan.style.display = 'none';
-                openNotificationsBtn.classList.remove('new-activity-alert');
-            }
-        }, (error) => {
-            console.error("Erro ao ouvir por novas mensagens de chat para o contador:", error);
-        });
-        unsubscribeNewActivity = () => { // Função combinada para desinscrição
-            unsubscribePosts();
-            unsubscribeMessages();
-        };
-    }, (error) => {
-        console.error("Erro ao ouvir por novos posts para o contador:", error);
-    });
-}
-
-// Carrega o feed de novidades (posts e mensagens recentes)
-async function loadNewActivityFeed() {
-    if (!notificationsList) return;
-    notificationsList.innerHTML = '';
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-        notificationsList.innerHTML = '<p style="color:red;">Faça login para ver suas novidades.</p>';
-        return;
-    }
-
-    const allActivityItems = [];
-
-    try {
-        // 1. Buscar posts recentes
-        const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(10));
-        const postsSnapshot = await getDocs(postsQuery);
-        postsSnapshot.forEach(doc => {
-            const post = doc.data();
-            allActivityItems.push({
-                type: 'post',
-                id: doc.id,
-                timestamp: post.timestamp,
-                content: post.content,
-                username: post.username || post.userId
-            });
-        });
-
-        // 2. Buscar mensagens de chat recentes envolvendo o usuário
-        const chatQuery1 = query(collection(db, "privateChats"),
-            where("senderId", "==", currentUser.uid),
-            orderBy("timestamp", "desc"),
-            limit(10)
-        );
-        const chatQuery2 = query(collection(db, "privateChats"),
-            where("recipientId", "==", currentUser.uid),
-            orderBy("timestamp", "desc"),
-            limit(10)
-        );
-
-        const [chatSnapshot1, chatSnapshot2] = await Promise.all([getDocs(chatQuery1), getDocs(chatQuery2)]);
-
-        chatSnapshot1.forEach(doc => {
-            const msg = doc.data();
-            allActivityItems.push({
-                type: 'sent_message',
-                id: doc.id,
-                timestamp: msg.timestamp,
-                message: msg.message,
-                recipientId: msg.recipientId,
-                senderUsername: msg.senderUsername,
-                recipientUsername: "" // Será preenchido
-            });
-        });
-
-        chatSnapshot2.forEach(doc => {
-            const msg = doc.data();
-            allActivityItems.push({
-                type: 'received_message',
-                id: doc.id,
-                timestamp: msg.timestamp,
-                message: msg.message,
-                senderId: msg.senderId,
-                senderUsername: msg.senderUsername,
-                recipientUsername: "" // Será preenchido
-            });
-        });
-
-        // 3. Obter nomes de usuário para mensagens
-        const userPromises = [];
-        const usersMap = new Map();
-
-        allActivityItems.filter(item => item.type === 'sent_message' || item.type === 'received_message')
-                         .forEach(item => {
-            const otherUserId = item.type === 'sent_message' ? item.recipientId : item.senderId;
-            if (otherUserId && !usersMap.has(otherUserId)) {
-                userPromises.push(getDoc(doc(db, "users", otherUserId)).then(userDoc => {
-                    if (userDoc.exists()) {
-                        usersMap.set(otherUserId, userDoc.data().username || userDoc.data().email);
-                    } else {
-                        usersMap.set(otherUserId, "Usuário Desconhecido");
-                    }
-                }));
-            }
-        });
-
-        await Promise.all(userPromises);
-
-        // Atribuir nomes de usuário
-        allActivityItems.forEach(item => {
-            if (item.type === 'sent_message') {
-                item.recipientUsername = usersMap.get(item.recipientId) || "Usuário Desconhecido";
-            } else if (item.type === 'received_message') {
-                item.senderUsername = usersMap.get(item.senderId) || "Usuário Desconhecido";
-            }
-        });
-
-
-        // 4. Ordenar todos os itens por timestamp (mais recentes primeiro)
-        allActivityItems.sort((a, b) => {
-            const tsA = a.timestamp?.toDate() || new Date(0);
-            const tsB = b.timestamp?.toDate() || new Date(0);
-            return tsB.getTime() - tsA.getTime();
-        });
-
-        // 5. Exibir no feed
-        if (allActivityItems.length === 0) {
-            const noActivityMessage = document.createElement('p');
-            noActivityMessage.textContent = "Nenhuma novidade ainda.";
-            notificationsList.appendChild(noActivityMessage);
-            return;
-        }
-
-        allActivityItems.forEach(item => {
-            const itemElement = document.createElement('div');
-            itemElement.classList.add('activity-item');
-            itemElement.style.marginBottom = '10px';
-            itemElement.style.padding = '10px';
-            itemElement.style.border = '1px solid #eee';
-            itemElement.style.borderRadius = '5px';
-
-            const timestampStr = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString() : 'Carregando...';
-
-            if (item.type === 'post') {
-                itemElement.innerHTML = `
-                    <h4>Novo Post de ${item.username}:</h4>
-                    <p>${item.content}</p>
-                    <small>${timestampStr}</small>
-                `;
-            } else if (item.type === 'sent_message') {
-                itemElement.innerHTML = `
-                    <h4>Mensagem Enviada para ${item.recipientUsername}:</h4>
-                    <p>"${item.message}"</p>
-                    <small>${timestampStr}</small>
-                `;
-            } else if (item.type === 'received_message') {
-                itemElement.innerHTML = `
-                    <h4>Mensagem Recebida de ${item.senderUsername}:</h4>
-                    <p>"${item.message}"</p>
-                    <small>${timestampStr}</small>
-                `;
-            }
-            notificationsList.appendChild(itemElement);
-        });
-    } catch (error) {
-        console.error("Erro ao carregar feed de novidades:", error);
-        const errorMessage = document.createElement('p');
-        errorMessage.style.color = 'red';
-        errorMessage.textContent = "Erro ao carregar feed de novidades.";
-        notificationsList.appendChild(errorMessage);
-    }
-}
-
-// Marca o momento atual como a última vez que o usuário visualizou as novidades
-async function markLastViewedAsCurrent() {
-    const user = auth.currentUser;
-    if (user) {
-        try {
-            const userRef = doc(db, "users", user.uid);
-            await updateDoc(userRef, {
-                lastViewedActivities: serverTimestamp()
-            });
-        } catch (error) {
-            console.error("Erro ao marcar atividades como vistas:", error);
-        }
-    }
-}
-
+// REMOVIDAS FUNÇÕES DE FEED DE NOVIDADES E MARCAÇÃO DE ATIVIDADE.
+// A seção de notificações agora é um placeholder simples.
 
 // Initial state on load
 document.addEventListener('DOMContentLoaded', () => {
