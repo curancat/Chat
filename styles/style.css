@@ -501,3 +501,34 @@ button:hover {
         height: 250px; /* Adjust chat height for smaller screens */
     }
 }
+/* Adicione esta animação para o brilho */
+@keyframes pulse-notification {
+    0% {
+        box-shadow: 0 0 0px rgba(255, 0, 0, 0);
+    }
+    50% {
+        box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); /* Vermelho brilhante */
+    }
+    100% {
+        box-shadow: 0 0 0px rgba(255, 0, 0, 0);
+    }
+}
+
+/* Aplica a animação ao botão de notificações quando a classe 'new-activity-alert' está presente */
+.open-notifications-btn.new-activity-alert {
+    animation: pulse-notification 1.5s infinite; /* Pisca infinitamente */
+    border-radius: 50%; /* Opcional: para um efeito mais suave */
+}
+
+/* Opcional: Estilo para o contador quando há novidades */
+#notificationCount {
+    background-color: red;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 50%;
+    font-size: 0.8em;
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    display: none; /* Escondido por padrão, JavaScript o mostrará */
+}
