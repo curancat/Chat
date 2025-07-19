@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 // REMOVIDO: import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
@@ -219,8 +219,8 @@ publishPostBtn.addEventListener("click", async () => {
             userId: user.uid,
             username: username,
             timestamp: serverTimestamp(),
-            likesCount: 0, // NOVO: Contador de curtidas
-            likedBy: []    // NOVO: Array para armazenar IDs dos usuários que curtiram
+            likesCount: 0, // Contador de curtidas
+            likedBy: []    // Array para armazenar IDs dos usuários que curtiram
         });
 
         postContent.value = '';
@@ -264,6 +264,62 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
     }
 }
 
+// --- Funções de Comentário ---
+
+// Função para adicionar um comentário
+async function addComment(postId, commentText) {
+    const user = auth.currentUser;
+    if (!user || !commentText.trim()) {
+        showMessage(postMessage, "Você precisa estar logado e digitar um comentário.", 'error');
+        return;
+    }
+
+    try {
+        // Obter o nome de usuário para o comentário
+        const userDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
+        let username = user.email;
+        userDocSnapshot.forEach((doc) => {
+            username = doc.data().username || user.email;
+        });
+
+        const commentsCollectionRef = collection(db, "posts", postId, "comments");
+        await addDoc(commentsCollectionRef, {
+            userId: user.uid,
+            username: username,
+            text: commentText,
+            timestamp: serverTimestamp()
+        });
+        showMessage(postMessage, "Comentário adicionado com sucesso!");
+    } catch (error) {
+        console.error("Erro ao adicionar comentário:", error);
+        showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
+    }
+}
+
+// Função para carregar e exibir comentários
+function loadComments(postId, commentsListElement) {
+    const commentsCollectionRef = collection(db, "posts", postId, "comments");
+    const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
+
+    // Usar onSnapshot para atualizações em tempo real
+    onSnapshot(q, (snapshot) => {
+        commentsListElement.innerHTML = ''; // Limpa os comentários existentes
+        snapshot.forEach((doc) => {
+            const comment = doc.data();
+            const commentElement = document.createElement('div');
+            commentElement.classList.add('comment');
+            commentElement.innerHTML = `
+                <p><strong>${comment.username || comment.userId}:</strong> ${comment.text}</p>
+                <small>${comment.timestamp ? new Date(comment.timestamp.toDate()).toLocaleString() : 'Enviando...'}</small>
+            `;
+            commentsListElement.appendChild(commentElement);
+        });
+    }, (error) => {
+        console.error("Erro ao carregar comentários:", error);
+        showMessage(commentsListElement, "Erro ao carregar comentários.", 'error');
+    });
+}
+
 
 // --- Carregar Posts (Feed) ---
 function loadPosts() {
@@ -283,14 +339,14 @@ function loadPosts() {
             postElement.innerHTML = `
                 <h3>${post.username || post.userId}</h3>
                 <p>${post.content}</p>
-                <small>${new Date(post.timestamp?.toDate()).toLocaleString()}</small>
+                <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
                 <div class="post-actions">
                     <button class="like-button ${isLiked ? 'liked' : ''}" data-post-id="${postId}" data-likes-count="${post.likesCount || 0}">
                         ❤️ ${post.likesCount || 0}
                     </button>
-                    <button class="comment-button" data-post-id="${postId}">💬 Comentar</button>
+                    <button class="comment-toggle-button" data-post-id="${postId}">💬 Comentar</button>
                 </div>
-                <div class="post-comments" data-post-id="${postId}">
+                <div class="post-comments" data-post-id="${postId}" style="display: none;">
                     <h4>Comentários:</h4>
                     <div class="comments-list"></div>
                     <div class="comment-input-area">
@@ -307,6 +363,38 @@ function loadPosts() {
                 likeButton.addEventListener('click', () => {
                     const currentLikes = parseInt(likeButton.dataset.likesCount); // Pega o valor atual do atributo
                     toggleLike(postId, currentLikes, likedBy); // Passa o array `likedBy` completo
+                });
+            }
+
+            // NOVO: Adiciona Event Listener para o botão de COMENTAR (toggle)
+            const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
+            const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
+            const commentsListElement = postCommentsSection.querySelector('.comments-list');
+
+            if (commentToggleButton && postCommentsSection) {
+                commentToggleButton.addEventListener('click', () => {
+                    if (postCommentsSection.style.display === 'none') {
+                        postCommentsSection.style.display = 'block'; // Mostra a seção de comentários
+                        loadComments(postId, commentsListElement); // Carrega os comentários quando a seção é aberta
+                    } else {
+                        postCommentsSection.style.display = 'none'; // Esconde a seção de comentários
+                    }
+                });
+            }
+
+            // NOVO: Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
+            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
+            const commentInput = postCommentsSection.querySelector('.comment-input');
+
+            if (submitCommentButton && commentInput) {
+                submitCommentButton.addEventListener('click', async () => {
+                    const commentText = commentInput.value.trim();
+                    if (commentText) {
+                        await addComment(postId, commentText);
+                        commentInput.value = ''; // Limpa o input após enviar
+                    } else {
+                        showMessage(postMessage, "Por favor, digite um comentário.", 'warning');
+                    }
                 });
             }
         });
@@ -435,7 +523,7 @@ chatSendMessageBtn.addEventListener("click", async () => {
     try {
         // Obter nome de usuário do remetente
         const senderDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        let senderUsername = user.data().username || user.email; // Prefere o username do usuário logado
+        let senderUsername = user.email; // Valor padrão
         senderDocSnapshot.forEach((doc) => {
             senderUsername = doc.data().username || user.email;
         });
