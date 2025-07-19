@@ -52,13 +52,17 @@ const registerBtn = document.getElementById("registerBtn");
 const viewFeedBtn = document.getElementById("viewFeedBtn");
 const createPostBtn = document.getElementById("createPostBtn");
 const openChatBtn = document.getElementById("openChatBtn");
+const openNotificationsBtn = document.getElementById("openNotificationsBtn"); // NOVO: Botão Notificações
+const notificationCountSpan = document.getElementById("notificationCount"); // NOVO: Contador Notificações
 
 const loginFormContainer = document.getElementById("loginFormContainer");
 const registerFormContainer = document.getElementById("registerFormContainer");
 const createPostSection = document.getElementById("createPostSection");
 const chatSection = document.getElementById("chatSection");
 const feedSection = document.getElementById("feedSection");
+const notificationsSection = document.getElementById("notificationsSection"); // NOVO: Seção Notificações
 const postsContainer = document.getElementById("postsContainer");
+const notificationsList = document.getElementById("notificationsList"); // NOVO: Lista Notificações
 
 
 // --- Utilitários ---
@@ -80,6 +84,7 @@ function hideAllForms() {
     createPostSection.classList.remove('active');
     chatSection.classList.remove('active');
     feedSection.classList.remove('active');
+    notificationsSection.classList.remove('active'); // NOVO: Esconde notificações
 }
 
 function updateNavButtons(isLoggedIn) {
@@ -90,6 +95,8 @@ function updateNavButtons(isLoggedIn) {
         viewFeedBtn.style.display = 'block';
         createPostBtn.style.display = 'block';
         openChatBtn.style.display = 'block';
+        openNotificationsBtn.style.display = 'block'; // NOVO: Mostra botão de notificação
+        setupNotificationListener(auth.currentUser.uid); // NOVO: Inicia o listener de notificações
     } else {
         loginBtn.style.display = 'block';
         registerBtn.style.display = 'block';
@@ -97,6 +104,8 @@ function updateNavButtons(isLoggedIn) {
         viewFeedBtn.style.display = 'none';
         createPostBtn.style.display = 'none';
         openChatBtn.style.display = 'none';
+        openNotificationsBtn.style.display = 'none'; // NOVO: Esconde botão de notificação
+        notificationCountSpan.textContent = '0'; // NOVO: Zera o contador
     }
 }
 
@@ -113,14 +122,12 @@ registerBtn.addEventListener('click', () => {
 createPostBtn.addEventListener('click', () => {
     hideAllForms();
     createPostSection.classList.add('active');
-    // CERTIFIQUE-SE DE REMOVER OS INPUTS DE IMAGEM, VÍDEO E ÁUDIO DO SEU HTML!
 });
 
 openChatBtn.addEventListener('click', () => {
     hideAllForms();
     chatSection.classList.add('active');
     loadChatUsers();
-    // CERTIFIQUE-SE DE REMOVER O INPUT DE MÍDIA DO CHAT DO SEU HTML!
 });
 
 viewFeedBtn.addEventListener('click', () => {
@@ -128,6 +135,14 @@ viewFeedBtn.addEventListener('click', () => {
     feedSection.classList.add('active');
     loadPosts(); // Garante que posts sejam carregados ao ir para o feed
 });
+
+// NOVO: Event Listener para o botão de Notificações
+openNotificationsBtn.addEventListener('click', () => {
+    hideAllForms();
+    notificationsSection.classList.add('active');
+    loadNotifications(); // Carrega a lista completa de notificações
+});
+
 
 // --- Autenticação ---
 loginSubmit.addEventListener("click", () => {
@@ -180,7 +195,7 @@ onAuthStateChanged(auth, (user) => {
         console.log("Usuário logado:", user.email, user.uid);
         if (!loginFormContainer.classList.contains('active') && !registerFormContainer.classList.contains('active') &&
             !createPostSection.classList.contains('active') && !chatSection.classList.contains('active') &&
-            !feedSection.classList.contains('active')) {
+            !feedSection.classList.contains('active') && !notificationsSection.classList.contains('active')) { // NOVO: Notificações
                 hideAllForms();
                 feedSection.classList.add('active');
                 loadPosts();
@@ -257,6 +272,16 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
                 likedBy: arrayUnion(userId) // Adiciona o ID do usuário ao array
             });
             showMessage(postMessage, "Você curtiu o post!");
+
+            // NOVO: Adicionar notificação de curtida
+            const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId))); // Obtém o post para saber o userId do dono
+            if (!postDoc.empty) {
+                const postOwnerId = postDoc.docs[0].data().userId;
+                const postOwnerUsername = postDoc.docs[0].data().username;
+                if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
+                    addNotification(postOwnerId, user.uid, user.displayName || user.email, 'like', `curtiu seu post: "${postDoc.docs[0].data().content.substring(0, 30)}..."`, postId);
+                }
+            }
         }
     } catch (error) {
         console.error("Erro ao curtir/descurtir o post:", error);
@@ -290,6 +315,17 @@ async function addComment(postId, commentText) {
             timestamp: serverTimestamp()
         });
         showMessage(postMessage, "Comentário adicionado com sucesso!");
+
+        // NOVO: Adicionar notificação de comentário
+        const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId))); // Obtém o post para saber o userId do dono
+        if (!postDoc.empty) {
+            const postOwnerId = postDoc.docs[0].data().userId;
+            const postOwnerUsername = postDoc.docs[0].data().username;
+            if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário comentou no próprio post
+                addNotification(postOwnerId, user.uid, username, 'comment', `comentou em seu post: "${commentText.substring(0, 30)}..."`, postId);
+            }
+        }
+
     } catch (error) {
         console.error("Erro ao adicionar comentário:", error);
         showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
@@ -366,7 +402,7 @@ function loadPosts() {
                 });
             }
 
-            // NOVO: Adiciona Event Listener para o botão de COMENTAR (toggle)
+            // Adiciona Event Listener para o botão de COMENTAR (toggle)
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
             const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
             const commentsListElement = postCommentsSection.querySelector('.comments-list');
@@ -382,7 +418,7 @@ function loadPosts() {
                 });
             }
 
-            // NOVO: Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
+            // Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
             const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
             const commentInput = postCommentsSection.querySelector('.comment-input');
 
@@ -539,13 +575,144 @@ chatSendMessageBtn.addEventListener("click", async () => {
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
+
+        // NOVO: Adicionar notificação de chat para o destinatário
+        // Precisamos obter o username do destinatário para a mensagem da notificação
+        const recipientUserDoc = await getDocs(query(collection(db, "users"), where("__name__", "==", recipientId)));
+        let recipientUsername = recipientId; // Padrão caso não encontre
+        if (!recipientUserDoc.empty) {
+            recipientUsername = recipientUserDoc.docs[0].data().username || recipientId;
+        }
+        addNotification(recipientId, user.uid, senderUsername, 'chat_message', `enviou uma mensagem: "${text.substring(0, 30)}..."`);
+
+
     } catch (error) {
         showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
         console.error("Erro ao enviar mensagem de chat:", error);
     }
 });
 
+// --- NOVO: Funções de Notificação ---
+
+// Função para adicionar uma notificação ao Firestore
+async function addNotification(recipientId, senderId, senderUsername, type, message, relatedPostId = null) {
+    try {
+        await addDoc(collection(db, "notifications"), {
+            recipientId: recipientId,
+            senderId: senderId,
+            senderUsername: senderUsername,
+            type: type, // 'like', 'comment', 'chat_message'
+            message: message, // Ex: "curtiu seu post", "comentou em seu post", "enviou uma mensagem"
+            relatedPostId: relatedPostId, // ID do post, se aplicável
+            timestamp: serverTimestamp(),
+            read: false // Por padrão, a notificação é não lida
+        });
+    } catch (error) {
+        console.error("Erro ao adicionar notificação:", error);
+    }
+}
+
+// Listener de notificações em tempo real para o contador
+let unsubscribeNotifications = null; // Para guardar a função de desinscrição
+
+function setupNotificationListener(userId) {
+    // Se já houver um listener ativo, desinscreve primeiro
+    if (unsubscribeNotifications) {
+        unsubscribeNotifications();
+    }
+
+    const q = query(collection(db, "notifications"),
+        where("recipientId", "==", userId),
+        where("read", "==", false)
+    );
+
+    unsubscribeNotifications = onSnapshot(q, (snapshot) => {
+        notificationCountSpan.textContent = snapshot.size; // Atualiza o contador de não lidas
+        if (snapshot.size > 0) {
+            notificationCountSpan.style.display = 'inline-block'; // Mostra o contador
+        } else {
+            notificationCountSpan.style.display = 'none'; // Esconde se não houver notificações
+        }
+    }, (error) => {
+        console.error("Erro ao ouvir notificações:", error);
+    });
+}
+
+// Carregar e exibir todas as notificações (lidas e não lidas)
+async function loadNotifications() {
+    const user = auth.currentUser;
+    if (!user) {
+        showMessage(notificationsSection, "Você precisa estar logado para ver as notificações.", 'error');
+        return;
+    }
+
+    notificationsList.innerHTML = ''; // Limpa a lista existente
+
+    const q = query(collection(db, "notifications"),
+        where("recipientId", "==", user.uid),
+        orderBy("timestamp", "desc")
+    );
+
+    onSnapshot(q, async (snapshot) => {
+        notificationsList.innerHTML = ''; // Limpa novamente para evitar duplicatas em atualizações
+        const unreadNotificationIds = []; // Coleta IDs de não lidas para marcar como lidas
+
+        snapshot.forEach((doc) => {
+            const notification = doc.data();
+            const notificationId = doc.id;
+
+            const notificationElement = document.createElement('div');
+            notificationElement.classList.add('notification-item');
+            if (!notification.read) {
+                notificationElement.classList.add('unread');
+                unreadNotificationIds.push(notificationId); // Adiciona para marcar como lida
+            }
+
+            let displayMessage = `${notification.senderUsername} ${notification.message}`;
+            if (notification.type === 'like' || notification.type === 'comment') {
+                displayMessage += ` (Post ID: ${notification.relatedPostId ? notification.relatedPostId.substring(0, 5) + '...' : 'N/A'})`; // Exibe parte do ID do post
+            }
+
+            notificationElement.innerHTML = `
+                <p>${displayMessage}</p>
+                <small>${notification.timestamp ? new Date(notification.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+            `;
+            notificationsList.appendChild(notificationElement);
+
+            // Opcional: Marcar como lida ao clicar na notificação (ou em um botão específico)
+            notificationElement.addEventListener('click', async () => {
+                if (!notification.read) {
+                    await markNotificationAsRead(notificationId);
+                }
+                // Poderíamos adicionar lógica para navegar para o post/chat relacionado aqui
+            });
+        });
+
+        // Marca todas as notificações exibidas como lidas
+        if (unreadNotificationIds.length > 0) {
+            for (const id of unreadNotificationIds) {
+                await markNotificationAsRead(id);
+            }
+        }
+    }, (error) => {
+        console.error("Erro ao carregar notificações:", error);
+        showMessage(notificationsSection, "Erro ao carregar notificações.", 'error');
+    });
+}
+
+// Função para marcar uma notificação como lida
+async function markNotificationAsRead(notificationId) {
+    try {
+        const notificationRef = doc(db, "notifications", notificationId);
+        await updateDoc(notificationRef, {
+            read: true
+        });
+    } catch (error) {
+        console.error("Erro ao marcar notificação como lida:", error);
+    }
+}
+
 // Initial state on load
 document.addEventListener('DOMContentLoaded', () => {
-    // onAuthStateChanged will handle the initial display logic
+    // onAuthStateChanged will handle the initial display logic and notification listener setup
 });
