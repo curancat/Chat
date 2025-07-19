@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 // REMOVIDO: import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
@@ -52,17 +52,17 @@ const registerBtn = document.getElementById("registerBtn");
 const viewFeedBtn = document.getElementById("viewFeedBtn");
 const createPostBtn = document.getElementById("createPostBtn");
 const openChatBtn = document.getElementById("openChatBtn");
-const openNotificationsBtn = document.getElementById("openNotificationsBtn"); // NOVO: Botão Notificações
-const notificationCountSpan = document.getElementById("notificationCount"); // NOVO: Contador Notificações
+const openNotificationsBtn = document.getElementById("openNotificationsBtn");
+const notificationCountSpan = document.getElementById("notificationCount");
 
 const loginFormContainer = document.getElementById("loginFormContainer");
 const registerFormContainer = document.getElementById("registerFormContainer");
 const createPostSection = document.getElementById("createPostSection");
 const chatSection = document.getElementById("chatSection");
 const feedSection = document.getElementById("feedSection");
-const notificationsSection = document.getElementById("notificationsSection"); // NOVO: Seção Notificações
+const notificationsSection = document.getElementById("notificationsSection");
 const postsContainer = document.getElementById("postsContainer");
-const notificationsList = document.getElementById("notificationsList"); // NOVO: Lista Notificações
+const notificationsList = document.getElementById("notificationsList"); // Esta agora será o "feed de novidades"
 
 
 // --- Utilitários ---
@@ -84,7 +84,7 @@ function hideAllForms() {
     createPostSection.classList.remove('active');
     chatSection.classList.remove('active');
     feedSection.classList.remove('active');
-    notificationsSection.classList.remove('active'); // NOVO: Esconde notificações
+    notificationsSection.classList.remove('active');
 }
 
 function updateNavButtons(isLoggedIn) {
@@ -95,8 +95,8 @@ function updateNavButtons(isLoggedIn) {
         viewFeedBtn.style.display = 'block';
         createPostBtn.style.display = 'block';
         openChatBtn.style.display = 'block';
-        openNotificationsBtn.style.display = 'block'; // NOVO: Mostra botão de notificação
-        setupNotificationListener(auth.currentUser.uid); // NOVO: Inicia o listener de notificações
+        openNotificationsBtn.style.display = 'block';
+        setupNewActivityListener(auth.currentUser.uid); // NOVO: Inicia o listener de novidades
     } else {
         loginBtn.style.display = 'block';
         registerBtn.style.display = 'block';
@@ -104,8 +104,9 @@ function updateNavButtons(isLoggedIn) {
         viewFeedBtn.style.display = 'none';
         createPostBtn.style.display = 'none';
         openChatBtn.style.display = 'none';
-        openNotificationsBtn.style.display = 'none'; // NOVO: Esconde botão de notificação
-        notificationCountSpan.textContent = '0'; // NOVO: Zera o contador
+        openNotificationsBtn.style.display = 'none';
+        notificationCountSpan.textContent = '0';
+        notificationCountSpan.style.display = 'none'; // Esconde o contador
     }
 }
 
@@ -133,14 +134,15 @@ openChatBtn.addEventListener('click', () => {
 viewFeedBtn.addEventListener('click', () => {
     hideAllForms();
     feedSection.classList.add('active');
-    loadPosts(); // Garante que posts sejam carregados ao ir para o feed
+    loadPosts();
 });
 
-// NOVO: Event Listener para o botão de Notificações
+// NOVO: Event Listener para o botão de Novidades
 openNotificationsBtn.addEventListener('click', () => {
     hideAllForms();
     notificationsSection.classList.add('active');
-    loadNotifications(); // Carrega a lista completa de notificações
+    loadNewActivityFeed(); // Carrega o feed de novidades
+    markLastViewedAsCurrent(); // Marca o momento atual como a última vez que o usuário viu as novidades
 });
 
 
@@ -165,7 +167,12 @@ registerSubmit.addEventListener("click", () => {
 
     createUserWithEmailAndPassword(auth, email, password)
         .then(cred => {
-            return setDoc(doc(db, "users", cred.user.uid), { username, email });
+            // Cria o documento do usuário e adiciona o campo lastViewedActivities
+            return setDoc(doc(db, "users", cred.user.uid), {
+                username,
+                email,
+                lastViewedActivities: serverTimestamp() // Adiciona um timestamp inicial
+            });
         })
         .then(() => {
             showMessage(registerMessage, "Cadastro realizado com sucesso!");
@@ -195,7 +202,7 @@ onAuthStateChanged(auth, (user) => {
         console.log("Usuário logado:", user.email, user.uid);
         if (!loginFormContainer.classList.contains('active') && !registerFormContainer.classList.contains('active') &&
             !createPostSection.classList.contains('active') && !chatSection.classList.contains('active') &&
-            !feedSection.classList.contains('active') && !notificationsSection.classList.contains('active')) { // NOVO: Notificações
+            !feedSection.classList.contains('active') && !notificationsSection.classList.contains('active')) {
                 hideAllForms();
                 feedSection.classList.add('active');
                 loadPosts();
@@ -213,7 +220,7 @@ publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value;
     const user = auth.currentUser;
 
-    if (!user || !content.trim()) { // .trim() para garantir que não é apenas espaços em branco
+    if (!user || !content.trim()) {
         showMessage(postMessage, "Preencha o conteúdo do post e esteja logado.", 'error');
         return;
     }
@@ -221,21 +228,19 @@ publishPostBtn.addEventListener("click", async () => {
     const postDocRef = doc(collection(db, "posts"));
 
     try {
-        // Obter o nome de usuário para o post
         const userDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
         let username = user.email;
         userDocSnapshot.forEach((doc) => {
             username = doc.data().username || user.email;
         });
 
-        // Salvar o post no Firestore com campos de curtidas vazios/iniciados
         await setDoc(postDocRef, {
             content: content,
             userId: user.uid,
             username: username,
             timestamp: serverTimestamp(),
-            likesCount: 0, // Contador de curtidas
-            likedBy: []    // Array para armazenar IDs dos usuários que curtiram
+            likesCount: 0,
+            likedBy: []
         });
 
         postContent.value = '';
@@ -259,29 +264,18 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
 
     try {
         if (likedByUserIds.includes(userId)) {
-            // Usuário já curtiu, então descurtir
             await updateDoc(postRef, {
-                likesCount: increment(-1), // Decrementa o contador
-                likedBy: arrayRemove(userId) // Remove o ID do usuário do array
+                likesCount: increment(-1),
+                likedBy: arrayRemove(userId)
             });
             showMessage(postMessage, "Você descurtiu o post.");
         } else {
-            // Usuário não curtiu, então curtir
             await updateDoc(postRef, {
-                likesCount: increment(1), // Incrementa o contador
-                likedBy: arrayUnion(userId) // Adiciona o ID do usuário ao array
+                likesCount: increment(1),
+                likedBy: arrayUnion(userId)
             });
             showMessage(postMessage, "Você curtiu o post!");
-
-            // NOVO: Adicionar notificação de curtida
-            const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId))); // Obtém o post para saber o userId do dono
-            if (!postDoc.empty) {
-                const postOwnerId = postDoc.docs[0].data().userId;
-                const postOwnerUsername = postDoc.docs[0].data().username;
-                if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
-                    addNotification(postOwnerId, user.uid, user.displayName || user.email, 'like', `curtiu seu post: "${postDoc.docs[0].data().content.substring(0, 30)}..."`, postId);
-                }
-            }
+            // Notificação de curtida não é mais usada aqui, pois será um feed de novidades gerais
         }
     } catch (error) {
         console.error("Erro ao curtir/descurtir o post:", error);
@@ -300,7 +294,6 @@ async function addComment(postId, commentText) {
     }
 
     try {
-        // Obter o nome de usuário para o comentário
         const userDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
         let username = user.email;
         userDocSnapshot.forEach((doc) => {
@@ -315,17 +308,7 @@ async function addComment(postId, commentText) {
             timestamp: serverTimestamp()
         });
         showMessage(postMessage, "Comentário adicionado com sucesso!");
-
-        // NOVO: Adicionar notificação de comentário
-        const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId))); // Obtém o post para saber o userId do dono
-        if (!postDoc.empty) {
-            const postOwnerId = postDoc.docs[0].data().userId;
-            const postOwnerUsername = postDoc.docs[0].data().username;
-            if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário comentou no próprio post
-                addNotification(postOwnerId, user.uid, username, 'comment', `comentou em seu post: "${commentText.substring(0, 30)}..."`, postId);
-            }
-        }
-
+        // Notificação de comentário não é mais usada aqui
     } catch (error) {
         console.error("Erro ao adicionar comentário:", error);
         showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
@@ -337,9 +320,8 @@ function loadComments(postId, commentsListElement) {
     const commentsCollectionRef = collection(db, "posts", postId, "comments");
     const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
 
-    // Usar onSnapshot para atualizações em tempo real
     onSnapshot(q, (snapshot) => {
-        commentsListElement.innerHTML = ''; // Limpa os comentários existentes
+        commentsListElement.innerHTML = '';
         snapshot.forEach((doc) => {
             const comment = doc.data();
             const commentElement = document.createElement('div');
@@ -352,7 +334,7 @@ function loadComments(postId, commentsListElement) {
         });
     }, (error) => {
         console.error("Erro ao carregar comentários:", error);
-        showMessage(commentsListElement, "Erro ao carregar comentários.", 'error');
+        // showMessage(commentsListElement, "Erro ao carregar comentários.", 'error'); // Remover se não for necessário
     });
 }
 
@@ -365,10 +347,10 @@ function loadPosts() {
         postsContainer.innerHTML = '';
         snapshot.forEach((doc) => {
             const post = doc.data();
-            const postId = doc.id; // Obtenha o ID do post
+            const postId = doc.id;
             const currentUser = auth.currentUser;
-            const likedBy = post.likedBy || []; // Garante que likedBy seja um array
-            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false; // Verifica se o usuário logado curtiu
+            const likedBy = post.likedBy || [];
+            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
 
             const postElement = document.createElement('div');
             postElement.classList.add('post-card');
@@ -393,16 +375,14 @@ function loadPosts() {
             `;
             postsContainer.appendChild(postElement);
 
-            // Adiciona Event Listener para o botão de curtir
             const likeButton = postElement.querySelector(`.like-button[data-post-id="${postId}"]`);
             if (likeButton) {
                 likeButton.addEventListener('click', () => {
-                    const currentLikes = parseInt(likeButton.dataset.likesCount); // Pega o valor atual do atributo
-                    toggleLike(postId, currentLikes, likedBy); // Passa o array `likedBy` completo
+                    const currentLikes = parseInt(likeButton.dataset.likesCount);
+                    toggleLike(postId, currentLikes, likedBy);
                 });
             }
 
-            // Adiciona Event Listener para o botão de COMENTAR (toggle)
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
             const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
             const commentsListElement = postCommentsSection.querySelector('.comments-list');
@@ -410,15 +390,14 @@ function loadPosts() {
             if (commentToggleButton && postCommentsSection) {
                 commentToggleButton.addEventListener('click', () => {
                     if (postCommentsSection.style.display === 'none') {
-                        postCommentsSection.style.display = 'block'; // Mostra a seção de comentários
-                        loadComments(postId, commentsListElement); // Carrega os comentários quando a seção é aberta
+                        postCommentsSection.style.display = 'block';
+                        loadComments(postId, commentsListElement);
                     } else {
-                        postCommentsSection.style.display = 'none'; // Esconde a seção de comentários
+                        postCommentsSection.style.display = 'none';
                     }
                 });
             }
 
-            // Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
             const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
             const commentInput = postCommentsSection.querySelector('.comment-input');
 
@@ -427,7 +406,7 @@ function loadPosts() {
                     const commentText = commentInput.value.trim();
                     if (commentText) {
                         await addComment(postId, commentText);
-                        commentInput.value = ''; // Limpa o input após enviar
+                        commentInput.value = '';
                     } else {
                         showMessage(postMessage, "Por favor, digite um comentário.", 'warning');
                     }
@@ -508,7 +487,6 @@ function listenForChatMessages(user1Id, user2Id) {
     });
 }
 
-// Display a single chat message
 function displayChatMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message-bubble');
@@ -517,13 +495,12 @@ function displayChatMessage(message) {
     let senderName = message.senderUsername || "Desconhecido";
     if (currentUser && message.senderId === currentUser.uid) {
         messageElement.classList.add('sent');
-        senderName = "Você";
+  senderName = "Você";
     } else {
         messageElement.classList.add('received');
     }
 
     let contentHTML = '';
-    // Apenas exibe o texto da mensagem
     if (message.message) {
         contentHTML = `<p>${message.message}</p>`;
     }
@@ -551,15 +528,14 @@ chatSendMessageBtn.addEventListener("click", async () => {
         showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
         return;
     }
-    if (!text) { // Agora exige apenas texto
+    if (!text) {
         showMessage(chatMessageDiv, "Digite uma mensagem.", 'error');
         return;
     }
 
     try {
-        // Obter nome de usuário do remetente
         const senderDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        let senderUsername = user.email; // Valor padrão
+        let senderUsername = user.email;
         senderDocSnapshot.forEach((doc) => {
             senderUsername = doc.data().username || user.email;
         });
@@ -568,149 +544,116 @@ chatSendMessageBtn.addEventListener("click", async () => {
             senderId: user.uid,
             senderUsername: senderUsername,
             recipientId: recipientId,
-            message: text, // Apenas o texto
-            type: 'text', // O tipo é sempre texto agora
+            message: text,
+            type: 'text',
             timestamp: serverTimestamp()
         });
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
-
-        // NOVO: Adicionar notificação de chat para o destinatário
-        // Precisamos obter o username do destinatário para a mensagem da notificação
-        const recipientUserDoc = await getDocs(query(collection(db, "users"), where("__name__", "==", recipientId)));
-        let recipientUsername = recipientId; // Padrão caso não encontre
-        if (!recipientUserDoc.empty) {
-            recipientUsername = recipientUserDoc.docs[0].data().username || recipientId;
-        }
-        addNotification(recipientId, user.uid, senderUsername, 'chat_message', `enviou uma mensagem: "${text.substring(0, 30)}..."`);
-
-
+        // Notificação de chat não é mais usada aqui
     } catch (error) {
         showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
         console.error("Erro ao enviar mensagem de chat:", error);
     }
 });
 
-// --- NOVO: Funções de Notificação ---
+// --- NOVO: Funções de Feed de Novidades ---
 
-// Função para adicionar uma notificação ao Firestore
-async function addNotification(recipientId, senderId, senderUsername, type, message, relatedPostId = null) {
-    try {
-        await addDoc(collection(db, "notifications"), {
-            recipientId: recipientId,
-            senderId: senderId,
-            senderUsername: senderUsername,
-            type: type, // 'like', 'comment', 'chat_message'
-            message: message, // Ex: "curtiu seu post", "comentou em seu post", "enviou uma mensagem"
-            relatedPostId: relatedPostId, // ID do post, se aplicável
-            timestamp: serverTimestamp(),
-            read: false // Por padrão, a notificação é não lida
+let unsubscribeNewActivity = null; // Para guardar a função de desinscrição do feed de novidades
+
+// Listener de novidades em tempo real para o contador
+async function setupNewActivityListener(userId) {
+    if (unsubscribeNewActivity) {
+        unsubscribeNewActivity();
+    }
+
+    const userRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userRef);
+    let lastViewedActivities = userDoc.exists() ? userDoc.data().lastViewedActivities : null;
+
+    if (!lastViewedActivities) {
+        // Se o usuário nunca viu as novidades, defina um timestamp inicial
+        await updateDoc(userRef, { lastViewedActivities: serverTimestamp() });
+        lastViewedActivities = new Date(); // Use a data atual localmente para o primeiro cálculo
+    } else if (lastViewedActivities.toDate) {
+        lastViewedActivities = lastViewedActivities.toDate(); // Converte Timestamp do Firestore para Date
+    }
+
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+
+    unsubscribeNewActivity = onSnapshot(q, (snapshot) => {
+        let newPostsCount = 0;
+        snapshot.forEach((postDoc) => {
+            const postTimestamp = postDoc.data().timestamp ? postDoc.data().timestamp.toDate() : new Date();
+            if (postTimestamp > lastViewedActivities) {
+                newPostsCount++;
+            }
         });
-    } catch (error) {
-        console.error("Erro ao adicionar notificação:", error);
-    }
-}
 
-// Listener de notificações em tempo real para o contador
-let unsubscribeNotifications = null; // Para guardar a função de desinscrição
-
-function setupNotificationListener(userId) {
-    // Se já houver um listener ativo, desinscreve primeiro
-    if (unsubscribeNotifications) {
-        unsubscribeNotifications();
-    }
-
-    const q = query(collection(db, "notifications"),
-        where("recipientId", "==", userId),
-        where("read", "==", false)
-    );
-
-    unsubscribeNotifications = onSnapshot(q, (snapshot) => {
-        notificationCountSpan.textContent = snapshot.size; // Atualiza o contador de não lidas
-        if (snapshot.size > 0) {
-            notificationCountSpan.style.display = 'inline-block'; // Mostra o contador
+        notificationCountSpan.textContent = newPostsCount;
+        if (newPostsCount > 0) {
+            notificationCountSpan.style.display = 'inline-block';
         } else {
-            notificationCountSpan.style.display = 'none'; // Esconde se não houver notificações
+            notificationCountSpan.style.display = 'none';
         }
     }, (error) => {
-        console.error("Erro ao ouvir notificações:", error);
+        console.error("Erro ao ouvir por novas atividades:", error);
+        notificationCountSpan.textContent = '0';
+        notificationCountSpan.style.display = 'none';
     });
 }
 
-// Carregar e exibir todas as notificações (lidas e não lidas)
-async function loadNotifications() {
-    const user = auth.currentUser;
-    if (!user) {
-        showMessage(notificationsSection, "Você precisa estar logado para ver as notificações.", 'error');
-        return;
-    }
-
+// Carrega o feed de novidades (posts mais recentes)
+async function loadNewActivityFeed() {
     notificationsList.innerHTML = ''; // Limpa a lista existente
+    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(20)); // Limita a 20 posts mais recentes
 
-    const q = query(collection(db, "notifications"),
-        where("recipientId", "==", user.uid),
-        orderBy("timestamp", "desc")
-    );
-
-    onSnapshot(q, async (snapshot) => {
+    onSnapshot(q, (snapshot) => {
         notificationsList.innerHTML = ''; // Limpa novamente para evitar duplicatas em atualizações
-        const unreadNotificationIds = []; // Coleta IDs de não lidas para marcar como lidas
-
-        snapshot.forEach((doc) => {
-            const notification = doc.data();
-            const notificationId = doc.id;
-
-            const notificationElement = document.createElement('div');
-            notificationElement.classList.add('notification-item');
-            if (!notification.read) {
-                notificationElement.classList.add('unread');
-                unreadNotificationIds.push(notificationId); // Adiciona para marcar como lida
-            }
-
-            let displayMessage = `${notification.senderUsername} ${notification.message}`;
-            if (notification.type === 'like' || notification.type === 'comment') {
-                displayMessage += ` (Post ID: ${notification.relatedPostId ? notification.relatedPostId.substring(0, 5) + '...' : 'N/A'})`; // Exibe parte do ID do post
-            }
-
-            notificationElement.innerHTML = `
-                <p>${displayMessage}</p>
-                <small>${notification.timestamp ? new Date(notification.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
-            `;
-            notificationsList.appendChild(notificationElement);
-
-            // Opcional: Marcar como lida ao clicar na notificação (ou em um botão específico)
-            notificationElement.addEventListener('click', async () => {
-                if (!notification.read) {
-                    await markNotificationAsRead(notificationId);
-                }
-                // Poderíamos adicionar lógica para navegar para o post/chat relacionado aqui
-            });
-        });
-
-        // Marca todas as notificações exibidas como lidas
-        if (unreadNotificationIds.length > 0) {
-            for (const id of unreadNotificationIds) {
-                await markNotificationAsRead(id);
-            }
+        if (snapshot.empty) {
+            const noActivityMessage = document.createElement('p');
+            noActivityMessage.textContent = "Nenhuma novidade ainda.";
+            notificationsList.appendChild(noActivityMessage);
+            return;
         }
+
+        snapshot.forEach((postDoc) => {
+            const post = postDoc.data();
+            const postElement = document.createElement('div');
+            postElement.classList.add('post-card'); // Reutiliza o estilo de post-card
+            postElement.innerHTML = `
+                <h3>${post.username || post.userId}</h3>
+                <p>${post.content}</p>
+                <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+                `;
+            notificationsList.appendChild(postElement);
+        });
     }, (error) => {
-        console.error("Erro ao carregar notificações:", error);
-        showMessage(notificationsSection, "Erro ao carregar notificações.", 'error');
+        console.error("Erro ao carregar feed de novidades:", error);
+        const errorMessage = document.createElement('p');
+        errorMessage.style.color = 'red';
+        errorMessage.textContent = "Erro ao carregar feed de novidades.";
+        notificationsList.appendChild(errorMessage);
     });
 }
 
-// Função para marcar uma notificação como lida
-async function markNotificationAsRead(notificationId) {
-    try {
-        const notificationRef = doc(db, "notifications", notificationId);
-        await updateDoc(notificationRef, {
-            read: true
-        });
-    } catch (error) {
-        console.error("Erro ao marcar notificação como lida:", error);
+// Marca o momento atual como a última vez que o usuário visualizou as novidades
+async function markLastViewedAsCurrent() {
+    const user = auth.currentUser;
+    if (user) {
+        try {
+            const userRef = doc(db, "users", user.uid);
+            await updateDoc(userRef, {
+                lastViewedActivities: serverTimestamp()
+            });
+            // O listener de novidades (setupNewActivityListener) vai reagir a essa mudança e zerar o contador
+        } catch (error) {
+            console.error("Erro ao marcar atividades como vistas:", error);
+        }
     }
 }
+
 
 // Initial state on load
 document.addEventListener('DOMContentLoaded', () => {
