@@ -8,15 +8,15 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyCN717SOcHkdqhuAZq7ZoEM-2gGb1sFjEY",
-  authDomain: "vlog-a698a.firebaseapp.com",
-  databaseURL: "https://vlog-a698a-default-rtdb.firebaseio.com",
-  projectId: "vlog-a698a",
-  storageBucket: "vlog-a698a.firebasestorage.app",
-  messagingSenderId: "24061559591",
-  appId: "1:24061559591:web:f7be730a33d0c0b856df02", // Updated appId
-  measurementId: "G-ZGV3LDM3QD" // Updated measurementId
+  apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
+  authDomain: "vlog-8a75f.firebaseapp.com",
+  projectId: "vlog-8a75f",
+  storageBucket: "vlog-8a75f.firebasestorage.app",
+  messagingSenderId: "1063952650353",
+  appId: "1:1063952650353:web:25f37c51b49daeaf81cbd0",
+  measurementId: "G-GRM2E926W3"
 };
 
 // Inicializa o Firebase
