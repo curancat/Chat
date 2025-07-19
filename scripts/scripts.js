@@ -1,14 +1,12 @@
 // --- Configuração do Firebase ---
 // Importa as funções específicas do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js"; // Added from new config
+import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
   authDomain: "vlog-8a75f.firebaseapp.com",
@@ -21,7 +19,7 @@ const firebaseConfig = {
 
 // Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // Initialized analytics
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const storage = getStorage(app);
@@ -41,16 +39,16 @@ const registerMessage = document.getElementById("registerMessage");
 const publishPostBtn = document.getElementById("publishPostBtn");
 const postContent = document.getElementById("postContent");
 const postImage = document.getElementById("postImage");
-const postVideo = document.getElementById("postVideo");
-const postAudio = document.getElementById("postAudio");
+// REMOVIDO: const postVideo = document.getElementById("postVideo");
+// REMOVIDO: const postAudio = document.getElementById("postAudio");
 const postMessage = document.getElementById("postMessage");
 
 const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
 const chatMessageInput = document.getElementById("chatMessageInput");
 const chatMediaInput = document.getElementById("chatMediaInput");
 const chatMessageDiv = document.getElementById("chatMessage");
-const chatMessagesDisplay = document.getElementById("chatMessagesDisplay"); // New
-const chatRecipientSelect = document.getElementById("chatRecipientSelect"); // New
+const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
+const chatRecipientSelect = document.getElementById("chatRecipientSelect");
 
 const logoutBtn = document.getElementById("logoutBtn");
 const loginBtn = document.getElementById("loginBtn");
@@ -63,24 +61,23 @@ const loginFormContainer = document.getElementById("loginFormContainer");
 const registerFormContainer = document.getElementById("registerFormContainer");
 const createPostSection = document.getElementById("createPostSection");
 const chatSection = document.getElementById("chatSection");
-const feedSection = document.getElementById("feedSection"); // New
-const postsContainer = document.getElementById("postsContainer"); // New
+const feedSection = document.getElementById("feedSection");
+const postsContainer = document.getElementById("postsContainer");
 
 
 // --- Utilitários ---
 function showMessage(element, msg, type = 'success') {
     element.textContent = msg;
     element.style.color = type === 'success' ? 'green' : 'red';
-    if (!element.classList.contains('active')) { // Ensure message is visible if not part of active form
+    if (!element.classList.contains('active')) {
         element.style.display = 'block';
     }
     setTimeout(() => {
         element.textContent = '';
-        element.style.display = 'none'; // Hide message after some time
+        element.style.display = 'none';
     }, 4000);
 }
 
-// Função para esconder todos os formulários/seções
 function hideAllForms() {
     loginFormContainer.classList.remove('active');
     registerFormContainer.classList.remove('active');
@@ -89,7 +86,6 @@ function hideAllForms() {
     feedSection.classList.remove('active');
 }
 
-// Função para atualizar a visibilidade dos botões de navegação
 function updateNavButtons(isLoggedIn) {
     if (isLoggedIn) {
         loginBtn.style.display = 'none';
@@ -108,7 +104,6 @@ function updateNavButtons(isLoggedIn) {
     }
 }
 
-// Event Listeners para botões de navegação
 loginBtn.addEventListener('click', () => {
     hideAllForms();
     loginFormContainer.classList.add('active');
@@ -122,18 +117,20 @@ registerBtn.addEventListener('click', () => {
 createPostBtn.addEventListener('click', () => {
     hideAllForms();
     createPostSection.classList.add('active');
+    // Você também deve remover os inputs de video e audio do seu HTML
 });
 
 openChatBtn.addEventListener('click', () => {
     hideAllForms();
     chatSection.classList.add('active');
-    loadChatUsers(); // Load users when chat is opened
+    loadChatUsers();
+    // Você também deve remover o input de chat media do seu HTML se for apenas texto
 });
 
 viewFeedBtn.addEventListener('click', () => {
     hideAllForms();
     feedSection.classList.add('active');
-    loadPosts(); // Load posts when feed is opened
+    loadPosts();
 });
 
 // --- Autenticação ---
@@ -145,7 +142,7 @@ loginSubmit.addEventListener("click", () => {
         .then(() => {
             showMessage(loginMessage, "Login bem-sucedido!");
             hideAllForms();
-            feedSection.classList.add('active'); // Show feed after login
+            feedSection.classList.add('active');
         })
         .catch(error => showMessage(loginMessage, error.message, 'error'));
 });
@@ -157,13 +154,12 @@ registerSubmit.addEventListener("click", () => {
 
     createUserWithEmailAndPassword(auth, email, password)
         .then(cred => {
-            // Store user data including username in 'users' collection
             return setDoc(doc(db, "users", cred.user.uid), { username, email });
         })
         .then(() => {
             showMessage(registerMessage, "Cadastro realizado com sucesso!");
             hideAllForms();
-            loginFormContainer.classList.add('active'); // Go to login after registration
+            loginFormContainer.classList.add('active');
         })
         .catch(error => showMessage(registerMessage, error.message, 'error'));
 });
@@ -174,7 +170,7 @@ logoutBtn.addEventListener("click", () => {
         .then(() => {
             showMessage(loginMessage, "Logout bem-sucedido!");
             hideAllForms();
-            loginFormContainer.classList.add('active'); // Show login again
+            loginFormContainer.classList.add('active');
         })
         .catch(error => {
             showMessage(loginMessage, error.message, 'error');
@@ -183,75 +179,78 @@ logoutBtn.addEventListener("click", () => {
 
 // Monitorar estado de autenticação
 onAuthStateChanged(auth, (user) => {
-    updateNavButtons(!!user); // Update button visibility based on login status
+    updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        // If logged in, automatically show the feed (or another default page)
-        // This prevents the login form from flashing if they were already logged in
         if (!loginFormContainer.classList.contains('active') && !registerFormContainer.classList.contains('active') &&
             !createPostSection.classList.contains('active') && !chatSection.classList.contains('active') &&
             !feedSection.classList.contains('active')) {
                 hideAllForms();
                 feedSection.classList.add('active');
-                loadPosts(); // Load posts for the feed when logged in
+                loadPosts();
         }
     } else {
         console.log("Nenhum usuário logado.");
         hideAllForms();
-        loginFormContainer.classList.add('active'); // Default to login if not logged in
+        loginFormContainer.classList.add('active');
     }
 });
 
 
-// --- Publicar Post ---
+// --- Publicar Post (SOMENTE TEXTO E IMAGEM) ---
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value;
     const user = auth.currentUser;
 
-    if (!user || !content) {
-        showMessage(postMessage, "Preencha o conteúdo e esteja logado.", 'error');
+    if (!user || !content.trim()) { // .trim() para garantir que não é apenas espaços em branco
+        showMessage(postMessage, "Preencha o conteúdo do post e esteja logado.", 'error');
         return;
     }
 
-    const postDocRef = doc(collection(db, "posts")); // Get a new document reference with an auto ID
-    const uploads = [];
+    const postDocRef = doc(collection(db, "posts"));
+    let imageURL = null; // Inicializa imageURL como null
 
     const uploadFile = async (input, type) => {
         const file = input.files[0];
         if (!file) return null;
+
+        // Verifica se é um arquivo de imagem
+        if (!file.type.startsWith('image/')) {
+            showMessage(postMessage, "Apenas imagens são permitidas para upload de mídia no post.", 'error');
+            return null; // Retorna null se não for imagem
+        }
+
         const storageRef = ref(storage, `posts/${postDocRef.id}/${type}-${file.name}`);
         await uploadBytes(storageRef, file);
         return await getDownloadURL(storageRef);
     };
 
-    uploads.push(uploadFile(postImage, 'imagem'));
-    uploads.push(uploadFile(postVideo, 'video'));
-    uploads.push(uploadFile(postAudio, 'audio'));
+    // Tenta fazer upload apenas da imagem
+    imageURL = await uploadFile(postImage, 'imagem');
+
 
     try {
-        const [imageURL, videoURL, audioURL] = await Promise.all(uploads);
-
-        // Get the username for the post
+        // Obter o nome de usuário para o post
         const userDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        let username = user.email; // Default to email if username not found
+        let username = user.email;
         userDocSnapshot.forEach((doc) => {
             username = doc.data().username || user.email;
         });
 
+        // Salvar o post no Firestore
         await setDoc(postDocRef, {
-            content,
+            content: content,
             userId: user.uid,
-            username: username, // Store username with the post
+            username: username,
             timestamp: serverTimestamp(),
-            imageURL: imageURL || null,
-            videoURL: videoURL || null,
-            audioURL: audioURL || null
+            imageURL: imageURL // imageURL será null se não houver imagem ou se o upload falhar
+            // REMOVIDO: videoURL, audioURL não serão mais salvos
         });
 
         postContent.value = '';
         postImage.value = '';
-        postVideo.value = '';
-        postAudio.value = '';
+        // REMOVIDO: postVideo.value = '';
+        // REMOVIDO: postAudio.value = '';
         showMessage(postMessage, "Post publicado com sucesso!");
     } catch (error) {
         showMessage(postMessage, "Erro ao publicar post.", 'error');
@@ -261,20 +260,18 @@ publishPostBtn.addEventListener("click", async () => {
 
 // --- Carregar Posts (Feed) ---
 function loadPosts() {
-    postsContainer.innerHTML = ''; // Clear previous posts
+    postsContainer.innerHTML = '';
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
-        postsContainer.innerHTML = ''; // Clear again to prevent duplicates on updates
+        postsContainer.innerHTML = '';
         snapshot.forEach((doc) => {
             const post = doc.data();
             const postElement = document.createElement('div');
-            postElement.classList.add('post-card'); // Use .post-card for styling
+            postElement.classList.add('post-card');
             postElement.innerHTML = `
                 <h3>${post.username || post.userId}</h3>
                 <p>${post.content}</p>
                 ${post.imageURL ? `<img src="${post.imageURL}" alt="Post Image">` : ''}
-                ${post.videoURL ? `<video controls src="${post.videoURL}"></video>` : ''}
-                ${post.audioURL ? `<audio controls src="${post.audioURL}"></audio>` : ''}
                 <small>${new Date(post.timestamp?.toDate()).toLocaleString()}</small>
             `;
             postsContainer.appendChild(postElement);
@@ -286,21 +283,20 @@ function loadPosts() {
 }
 
 // --- Chat Privado ---
-let currentChatRecipientId = null; // Track the current recipient for private chat
+let currentChatRecipientId = null;
 
-// Load users for the recipient dropdown
 async function loadChatUsers() {
-    chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Default option
+    chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>';
     const currentUser = auth.currentUser;
     if (!currentUser) return;
 
     const usersRef = collection(db, "users");
-    const q = query(usersRef, orderBy("username")); // Order users by username
+    const q = query(usersRef, orderBy("username"));
     const querySnapshot = await getDocs(q);
 
     querySnapshot.forEach((doc) => {
         const userData = doc.data();
-        if (doc.id !== currentUser.uid) { // Don't allow chatting with self
+        if (doc.id !== currentUser.uid) {
             const option = document.createElement('option');
             option.value = doc.id;
             option.textContent = userData.username || userData.email;
@@ -308,57 +304,47 @@ async function loadChatUsers() {
         }
     });
 
-    // Set up listener for recipient selection if not already set
     if (!chatRecipientSelect.dataset.listenerAdded) {
         chatRecipientSelect.addEventListener('change', (event) => {
             currentChatRecipientId = event.target.value;
-            chatMessagesDisplay.innerHTML = ''; // Clear previous messages
+            chatMessagesDisplay.innerHTML = '';
             if (currentChatRecipientId) {
                 listenForChatMessages(currentUser.uid, currentChatRecipientId);
             }
         });
-        chatRecipientSelect.dataset.listenerAdded = true; // Mark as added
+        chatRecipientSelect.dataset.listenerAdded = true;
     }
 }
 
-// Listen for chat messages between two users
 function listenForChatMessages(user1Id, user2Id) {
     const chatCollectionRef = collection(db, "privateChats");
 
-    // Query for messages where sender is user1 and recipient is user2
     const q1 = query(chatCollectionRef,
         where("senderId", "==", user1Id),
         where("recipientId", "==", user2Id)
     );
-    // Query for messages where sender is user2 and recipient is user1
     const q2 = query(chatCollectionRef,
         where("senderId", "==", user2Id),
         where("recipientId", "==", user1Id)
     );
 
-    // Combine results from both queries and sort by timestamp in JavaScript
-    // This is a common pattern for bidirectional chat queries in Firestore
-    // It's crucial to handle real-time updates for both queries.
-    // Using a single onSnapshot that combines both would be more efficient for real-time.
-    // However, to simplify the example without complex merge logic, we'll use two.
     onSnapshot(q1, (snapshot1) => {
         onSnapshot(q2, (snapshot2) => {
             const allMessages = [];
             snapshot1.forEach(doc => allMessages.push(doc.data()));
             snapshot2.forEach(doc => allMessages.push(doc.data()));
 
-            // Sort all messages by timestamp
             allMessages.sort((a, b) => {
-                const timestampA = a.timestamp?.toDate() || new Date(0); // Handle pending timestamps
-                const timestampB = b.timestamp?.toDate() || new Date(0); // Handle pending timestamps
+                const timestampA = a.timestamp?.toDate() || new Date(0);
+                const timestampB = b.timestamp?.toDate() || new Date(0);
                 return timestampA - timestampB;
             });
 
-            chatMessagesDisplay.innerHTML = ''; // Clear display
+            chatMessagesDisplay.innerHTML = '';
             allMessages.forEach(message => {
                 displayChatMessage(message);
             });
-            chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight; // Scroll to bottom
+            chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
         });
     });
 }
@@ -366,27 +352,35 @@ function listenForChatMessages(user1Id, user2Id) {
 // Display a single chat message
 function displayChatMessage(message) {
     const messageElement = document.createElement('div');
-    messageElement.classList.add('message-bubble'); // Use .message-bubble for styling
+    messageElement.classList.add('message-bubble');
     const currentUser = auth.currentUser;
 
     let senderName = message.senderUsername || "Desconhecido";
     if (currentUser && message.senderId === currentUser.uid) {
-        messageElement.classList.add('sent'); // My messages
+        messageElement.classList.add('sent');
         senderName = "Você";
     } else {
-        messageElement.classList.add('received'); // Other user's messages
+        messageElement.classList.add('received');
     }
 
     let contentHTML = '';
-    if (message.type === 'text' && message.message) {
+    // Prioriza exibir o texto da mensagem
+    if (message.message) {
         contentHTML = `<p>${message.message}</p>`;
-    } else if (message.type === 'image' && message.mediaURL) {
-        contentHTML = `<img src="${message.mediaURL}" alt="Chat Image">`;
-    } else if (message.type === 'video' && message.mediaURL) {
-        contentHTML = `<video controls src="${message.mediaURL}"></video>`;
-    } else if (message.type === 'audio' && message.mediaURL) {
-        contentHTML = `<audio controls src="${message.mediaURL}"></audio>`;
     }
+
+    // Se houver uma imagem, adiciona ao conteúdo HTML
+    if (message.type === 'image' && message.mediaURL) {
+        contentHTML += `<img src="${message.mediaURL}" alt="Chat Image">`;
+    }
+    // REMOVIDO: Lógica para exibir vídeo
+    // else if (message.type === 'video' && message.mediaURL) {
+    //     contentHTML = `<video controls src="${message.mediaURL}"></video>`;
+    // }
+    // REMOVIDO: Lógica para exibir áudio
+    // else if (message.type === 'audio' && message.mediaURL) {
+    //     contentHTML = `<audio controls src="${message.mediaURL}"></audio>`;
+    // }
 
     messageElement.innerHTML = `
         <strong>${senderName}</strong>
@@ -397,7 +391,7 @@ function displayChatMessage(message) {
 }
 
 
-// --- Enviar mensagem no chat (texto e mídia) ---
+// --- Enviar mensagem no chat (texto e imagens) ---
 chatSendMessageBtn.addEventListener("click", async () => {
     const text = chatMessageInput.value.trim();
     const mediaFile = chatMediaInput.files[0];
@@ -412,10 +406,16 @@ chatSendMessageBtn.addEventListener("click", async () => {
         showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
         return;
     }
+    // Permite enviar só texto, só imagem, ou texto com imagem
     if (!text && !mediaFile) {
-        showMessage(chatMessageDiv, "Digite uma mensagem ou selecione uma mídia.", 'error');
+        showMessage(chatMessageDiv, "Digite uma mensagem ou selecione uma imagem.", 'error');
         return;
     }
+    if (mediaFile && !mediaFile.type.startsWith('image/')) {
+        showMessage(chatMessageDiv, "Apenas imagens são permitidas para upload no chat.", 'error');
+        return;
+    }
+
 
     try {
         let mediaURL = null;
@@ -424,30 +424,29 @@ chatSendMessageBtn.addEventListener("click", async () => {
             const storageRef = ref(storage, `chat_media/${user.uid}/${recipientId}/${Date.now()}-${mediaFile.name}`);
             await uploadBytes(storageRef, mediaFile);
             mediaURL = await getDownloadURL(storageRef);
-            mediaType = mediaFile.type.split("/")[0];
+            mediaType = mediaFile.type.split("/")[0]; // Será 'image'
         }
 
-        // Get sender username for display
+        // Obter nome de usuário do remetente
         const senderDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
         let senderUsername = user.email;
         senderDocSnapshot.forEach((doc) => {
             senderUsername = doc.data().username || user.email;
         });
 
-        // Use a combined ID for private chat documents to easily query both sides
         await setDoc(doc(collection(db, "privateChats"), Date.now().toString() + "_" + user.uid), {
             senderId: user.uid,
             senderUsername: senderUsername,
             recipientId: recipientId,
-            message: text || null,
-            mediaURL: mediaURL || null,
-            type: mediaType || (text ? 'text' : 'unknown'),
+            message: text || null, // Armazena null se o campo de texto estiver vazio
+            mediaURL: mediaURL || null, // Armazena null se não houver mídia
+            type: mediaType || (text ? 'text' : 'unknown'), // Define o tipo
             timestamp: serverTimestamp()
         });
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
-        chatMediaInput.value = ''; // Clear file input
+        chatMediaInput.value = ''; // Limpa input de arquivo
     } catch (error) {
         showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
         console.error("Erro ao enviar mensagem de chat:", error);
