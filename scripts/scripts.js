@@ -23,170 +23,182 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // --- Elementos DOM ---
-const loginEmail = document.getElementById("loginEmail");
-const loginPassword = document.getElementById("loginPassword");
-const loginSubmit = document.getElementById("loginSubmit");
-const loginMessage = document.getElementById("loginMessage");
+// Garante que os elementos existem antes de tentar selecioná-los
+const getElement = (id) => {
+    const element = document.getElementById(id);
+    if (!element) {
+        console.error(`Elemento com ID '${id}' não encontrado no DOM.`);
+    }
+    return element;
+};
 
-const registerUsername = document.getElementById("registerUsername");
-const registerEmail = document.getElementById("registerEmail");
-const registerPassword = document.getElementById("registerPassword");
-const registerSubmit = document.getElementById("registerSubmit");
-const registerMessage = document.getElementById("registerMessage");
+const loginEmail = getElement("loginEmail");
+const loginPassword = getElement("loginPassword");
+const loginSubmit = getElement("loginSubmit");
+const loginMessage = getElement("loginMessage");
 
-const publishPostBtn = document.getElementById("publishPostBtn");
-const postContent = document.getElementById("postContent");
-const postMessage = document.getElementById("postMessage");
+const registerUsername = getElement("registerUsername");
+const registerEmail = getElement("registerEmail");
+const registerPassword = getElement("registerPassword");
+const registerSubmit = getElement("registerSubmit");
+const registerMessage = getElement("registerMessage");
 
-const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
-const chatMessageInput = document.getElementById("chatMessageInput");
-const chatMessageDiv = document.getElementById("chatMessage");
-const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
-const chatRecipientSelect = document.getElementById("chatRecipientSelect");
+const publishPostBtn = getElement("publishPostBtn");
+const postContent = getElement("postContent");
+const postMessage = getElement("postMessage");
 
-const logoutBtn = document.getElementById("logoutBtn");
-const loginBtn = document.getElementById("loginBtn");
-const registerBtn = document.getElementById("registerBtn");
-const viewFeedBtn = document.getElementById("viewFeedBtn");
-const createPostBtn = document.getElementById("createPostBtn");
-const openChatBtn = document.getElementById("openChatBtn");
-const openNotificationsBtn = document.getElementById("openNotificationsBtn");
-const notificationCountSpan = document.getElementById("notificationCount");
+const chatSendMessageBtn = getElement("chatSendMessageBtn");
+const chatMessageInput = getElement("chatMessageInput");
+const chatMessageDiv = getElement("chatMessage"); // General message div for chat
+const chatMessagesDisplay = getElement("chatMessagesDisplay");
+const chatRecipientSelect = getElement("chatRecipientSelect");
 
-const loginFormContainer = document.getElementById("loginFormContainer");
-const registerFormContainer = document.getElementById("registerFormContainer");
-const createPostSection = document.getElementById("createPostSection");
-const chatSection = document.getElementById("chatSection");
-const feedSection = document.getElementById("feedSection");
-const notificationsSection = document.getElementById("notificationsSection");
-const postsContainer = document.getElementById("postsContainer");
-const notificationsList = document.getElementById("notificationsList");
+const logoutBtn = getElement("logoutBtn");
+const loginBtn = getElement("loginBtn");
+const registerBtn = getElement("registerBtn");
+const viewFeedBtn = getElement("viewFeedBtn");
+const createPostBtn = getElement("createPostBtn");
+const openChatBtn = getElement("openChatBtn");
+const openNotificationsBtn = getElement("openNotificationsBtn");
+const notificationCountSpan = getElement("notificationCount");
+
+const loginFormContainer = getElement("loginFormContainer");
+const registerFormContainer = getElement("registerFormContainer");
+const createPostSection = getElement("createPostSection");
+const chatSection = getElement("chatSection");
+const feedSection = getElement("feedSection");
+const notificationsSection = getElement("notificationsSection");
+const postsContainer = getElement("postsContainer");
+const notificationsList = getElement("notificationsList");
 
 
 // --- Utilitários ---
 function showMessage(element, msg, type = 'success') {
+    if (!element) return; // Garante que o elemento existe
     element.textContent = msg;
     element.style.color = type === 'success' ? 'green' : 'red';
-    if (!element.classList.contains('active')) {
-        element.style.display = 'block';
-    }
+    element.style.display = 'block'; // Garante que a mensagem é visível
     setTimeout(() => {
-        element.textContent = '';
-        element.style.display = 'none';
+        if (element) { // Verifica novamente antes de limpar
+            element.textContent = '';
+            element.style.display = 'none';
+        }
     }, 4000);
 }
 
 function hideAllForms() {
-    loginFormContainer.classList.remove('active');
-    registerFormContainer.classList.remove('active');
-    createPostSection.classList.remove('active');
-    chatSection.classList.remove('active');
-    feedSection.classList.remove('active');
-    notificationsSection.classList.remove('active');
+    [loginFormContainer, registerFormContainer, createPostSection, chatSection, feedSection, notificationsSection].forEach(el => {
+        if (el) el.classList.remove('active');
+    });
 }
 
 function updateNavButtons(isLoggedIn) {
     if (isLoggedIn) {
-        loginBtn.style.display = 'none';
-        registerBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
-        viewFeedBtn.style.display = 'block';
-        createPostBtn.style.display = 'block';
-        openChatBtn.style.display = 'block';
-        openNotificationsBtn.style.display = 'block';
-        setupNewActivityListener(auth.currentUser.uid); // Inicia o listener de novidades
+        if (loginBtn) loginBtn.style.display = 'none';
+        if (registerBtn) registerBtn.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = 'block';
+        if (viewFeedBtn) viewFeedBtn.style.display = 'block';
+        if (createPostBtn) createPostBtn.style.display = 'block';
+        if (openChatBtn) openChatBtn.style.display = 'block';
+        if (openNotificationsBtn) openNotificationsBtn.style.display = 'block';
+        if (auth.currentUser) setupNewActivityListener(auth.currentUser.uid);
     } else {
-        loginBtn.style.display = 'block';
-        registerBtn.style.display = 'block';
-        logoutBtn.style.display = 'none';
-        viewFeedBtn.style.display = 'none';
-        createPostBtn.style.display = 'none';
-        openChatBtn.style.display = 'none';
-        openNotificationsBtn.style.display = 'none';
-        notificationCountSpan.textContent = '0';
-        notificationCountSpan.style.display = 'none';
+        if (loginBtn) loginBtn.style.display = 'block';
+        if (registerBtn) registerBtn.style.display = 'block';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        if (viewFeedBtn) viewFeedBtn.style.display = 'none';
+        if (createPostBtn) createPostBtn.style.display = 'none';
+        if (openChatBtn) openChatBtn.style.display = 'none';
+        if (openNotificationsBtn) openNotificationsBtn.style.display = 'none';
+        if (notificationCountSpan) {
+            notificationCountSpan.textContent = '0';
+            notificationCountSpan.style.display = 'none';
+        }
     }
 }
 
-loginBtn.addEventListener('click', () => {
+if (loginBtn) loginBtn.addEventListener('click', () => {
     hideAllForms();
-    loginFormContainer.classList.add('active');
+    if (loginFormContainer) loginFormContainer.classList.add('active');
 });
 
-registerBtn.addEventListener('click', () => {
+if (registerBtn) registerBtn.addEventListener('click', () => {
     hideAllForms();
-    registerFormContainer.classList.add('active');
+    if (registerFormContainer) registerFormContainer.classList.add('active');
 });
 
-createPostBtn.addEventListener('click', () => {
+if (createPostBtn) createPostBtn.addEventListener('click', () => {
     hideAllForms();
-    createPostSection.classList.add('active');
+    if (createPostSection) createPostSection.classList.add('active');
 });
 
-openChatBtn.addEventListener('click', () => {
+if (openChatBtn) openChatBtn.addEventListener('click', () => {
     hideAllForms();
-    chatSection.classList.add('active');
+    if (chatSection) chatSection.classList.add('active');
     loadChatUsers();
 });
 
-viewFeedBtn.addEventListener('click', () => {
+if (viewFeedBtn) viewFeedBtn.addEventListener('click', () => {
     hideAllForms();
-    feedSection.classList.add('active');
+    if (feedSection) feedSection.classList.add('active');
     loadPosts();
 });
 
-// Event Listener para o botão de Novidades
-openNotificationsBtn.addEventListener('click', () => {
+if (openNotificationsBtn) openNotificationsBtn.addEventListener('click', () => {
     hideAllForms();
-    notificationsSection.classList.add('active');
-    loadNewActivityFeed(); // Carrega o feed de novidades
-    markLastViewedAsCurrent(); // Marca o momento atual como a última vez que o usuário viu as novidades
+    if (notificationsSection) notificationsSection.classList.add('active');
+    loadNewActivityFeed();
+    markLastViewedAsCurrent();
 });
 
 
 // --- Autenticação ---
-loginSubmit.addEventListener("click", () => {
-    const email = loginEmail.value;
-    const password = loginPassword.value;
+if (loginSubmit) loginSubmit.addEventListener("click", () => {
+    const email = loginEmail ? loginEmail.value : '';
+    const password = loginPassword ? loginPassword.value : '';
+
+    if (!loginMessage) return;
 
     signInWithEmailAndPassword(auth, email, password)
         .then(() => {
             showMessage(loginMessage, "Login bem-sucedido!");
             hideAllForms();
-            feedSection.classList.add('active');
+            if (feedSection) feedSection.classList.add('active');
         })
         .catch(error => showMessage(loginMessage, error.message, 'error'));
 });
 
-registerSubmit.addEventListener("click", () => {
-    const email = registerEmail.value;
-    const password = registerPassword.value;
-    const username = registerUsername.value;
+if (registerSubmit) registerSubmit.addEventListener("click", () => {
+    const email = registerEmail ? registerEmail.value : '';
+    const password = registerPassword ? registerPassword.value : '';
+    const username = registerUsername ? registerUsername.value : '';
+
+    if (!registerMessage) return;
 
     createUserWithEmailAndPassword(auth, email, password)
         .then(cred => {
-            // Cria o documento do usuário e adiciona o campo lastViewedActivities
             return setDoc(doc(db, "users", cred.user.uid), {
                 username,
                 email,
-                lastViewedActivities: serverTimestamp() // Adiciona um timestamp inicial
-            });
+                lastViewedActivities: serverTimestamp()
+            }, { merge: true }); // Use merge para não sobrescrever se o doc já existir
         })
         .then(() => {
             showMessage(registerMessage, "Cadastro realizado com sucesso!");
             hideAllForms();
-            loginFormContainer.classList.add('active');
+            if (loginFormContainer) loginFormContainer.classList.add('active');
         })
         .catch(error => showMessage(registerMessage, error.message, 'error'));
 });
 
 // Logout
-logoutBtn.addEventListener("click", () => {
+if (logoutBtn) logoutBtn.addEventListener("click", () => {
+    if (!loginMessage) return;
     signOut(auth)
         .then(() => {
             showMessage(loginMessage, "Logout bem-sucedido!");
             hideAllForms();
-            loginFormContainer.classList.add('active');
+            if (loginFormContainer) loginFormContainer.classList.add('active');
         })
         .catch(error => {
             showMessage(loginMessage, error.message, 'error');
@@ -198,28 +210,30 @@ onAuthStateChanged(auth, (user) => {
     updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        if (!loginFormContainer.classList.contains('active') && !registerFormContainer.classList.contains('active') &&
-            !createPostSection.classList.contains('active') && !chatSection.classList.contains('active') &&
-            !feedSection.classList.add('active') && !notificationsSection.classList.contains('active')) {
-                hideAllForms();
+        // Garante que uma seção é mostrada se o usuário já estiver logado
+        const anyFormActive = [loginFormContainer, registerFormContainer, createPostSection, chatSection, feedSection, notificationsSection].some(el => el && el.classList.contains('active'));
+        if (!anyFormActive) {
+            hideAllForms();
+            if (feedSection) {
                 feedSection.classList.add('active');
                 loadPosts();
+            }
         }
     } else {
         console.log("Nenhum usuário logado.");
         hideAllForms();
-        loginFormContainer.classList.add('active');
+        if (loginFormContainer) loginFormContainer.classList.add('active');
     }
 });
 
 
 // --- Publicar Post (SOMENTE TEXTO) ---
-publishPostBtn.addEventListener("click", async () => {
-    const content = postContent.value;
+if (publishPostBtn) publishPostBtn.addEventListener("click", async () => {
+    const content = postContent ? postContent.value : '';
     const user = auth.currentUser;
 
     if (!user || !content.trim()) {
-        showMessage(postMessage, "Preencha o conteúdo do post e esteja logado.", 'error');
+        if (postMessage) showMessage(postMessage, "Preencha o conteúdo do post e esteja logado.", 'error');
         return;
     }
 
@@ -241,10 +255,10 @@ publishPostBtn.addEventListener("click", async () => {
             likedBy: []
         });
 
-        postContent.value = '';
-        showMessage(postMessage, "Post publicado com sucesso!");
+        if (postContent) postContent.value = '';
+        if (postMessage) showMessage(postMessage, "Post publicado com sucesso!");
     } catch (error) {
-        showMessage(postMessage, "Erro ao publicar post.", 'error');
+        if (postMessage) showMessage(postMessage, "Erro ao publicar post.", 'error');
         console.error("Erro ao publicar post:", error);
     }
 });
@@ -253,7 +267,7 @@ publishPostBtn.addEventListener("click", async () => {
 async function toggleLike(postId, currentLikesCount, likedByUserIds) {
     const user = auth.currentUser;
     if (!user) {
-        showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
+        if (postMessage) showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
         return;
     }
 
@@ -266,17 +280,17 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
                 likesCount: increment(-1),
                 likedBy: arrayRemove(userId)
             });
-            showMessage(postMessage, "Você descurtiu o post.");
+            if (postMessage) showMessage(postMessage, "Você descurtiu o post.");
         } else {
             await updateDoc(postRef, {
                 likesCount: increment(1),
                 likedBy: arrayUnion(userId)
             });
-            showMessage(postMessage, "Você curtiu o post!");
+            if (postMessage) showMessage(postMessage, "Você curtiu o post!");
         }
     } catch (error) {
         console.error("Erro ao curtir/descurtir o post:", error);
-        showMessage(postMessage, "Erro ao processar sua curtida.", 'error');
+        if (postMessage) showMessage(postMessage, "Erro ao processar sua curtida.", 'error');
     }
 }
 
@@ -286,7 +300,7 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
 async function addComment(postId, commentText) {
     const user = auth.currentUser;
     if (!user || !commentText.trim()) {
-        showMessage(postMessage, "Você precisa estar logado e digitar um comentário.", 'error');
+        if (postMessage) showMessage(postMessage, "Você precisa estar logado e digitar um comentário.", 'error');
         return;
     }
 
@@ -304,15 +318,17 @@ async function addComment(postId, commentText) {
             text: commentText,
             timestamp: serverTimestamp()
         });
-        showMessage(postMessage, "Comentário adicionado com sucesso!");
+        if (postMessage) showMessage(postMessage, "Comentário adicionado com sucesso!");
     } catch (error) {
         console.error("Erro ao adicionar comentário:", error);
-        showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
+        if (postMessage) showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
     }
 }
 
 // Função para carregar e exibir comentários
 function loadComments(postId, commentsListElement) {
+    if (!commentsListElement) return;
+
     const commentsCollectionRef = collection(db, "posts", postId, "comments");
     const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
 
@@ -336,10 +352,13 @@ function loadComments(postId, commentsListElement) {
 
 // --- Carregar Posts (Feed) ---
 function loadPosts() {
-    postsContainer.innerHTML = '';
+    if (!postsContainer) return;
+    postsContainer.innerHTML = ''; // Limpa antes de carregar
+
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
     onSnapshot(q, (snapshot) => {
-        postsContainer.innerHTML = '';
+        if (!postsContainer) return; // Verifica novamente caso o elemento tenha sido removido
+        postsContainer.innerHTML = ''; // Limpa novamente para atualizações em tempo real
         snapshot.forEach((doc) => {
             const post = doc.data();
             const postId = doc.id;
@@ -380,21 +399,21 @@ function loadPosts() {
 
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
             const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
-            const commentsListElement = postCommentsSection.querySelector('.comments-list');
+            const commentsListElement = postCommentsSection ? postCommentsSection.querySelector('.comments-list') : null;
 
             if (commentToggleButton && postCommentsSection) {
                 commentToggleButton.addEventListener('click', () => {
                     if (postCommentsSection.style.display === 'none') {
                         postCommentsSection.style.display = 'block';
-                        loadComments(postId, commentsListElement);
+                        if (commentsListElement) loadComments(postId, commentsListElement);
                     } else {
                         postCommentsSection.style.display = 'none';
                     }
                 });
             }
 
-            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
-            const commentInput = postCommentsSection.querySelector('.comment-input');
+            const submitCommentButton = postCommentsSection ? postCommentsSection.querySelector('.submit-comment-button') : null;
+            const commentInput = postCommentsSection ? postCommentsSection.querySelector('.comment-input') : null;
 
             if (submitCommentButton && commentInput) {
                 submitCommentButton.addEventListener('click', async () => {
@@ -403,23 +422,24 @@ function loadPosts() {
                         await addComment(postId, commentText);
                         commentInput.value = '';
                     } else {
-                        showMessage(postMessage, "Por favor, digite um comentário.", 'warning');
+                        if (postMessage) showMessage(postMessage, "Por favor, digite um comentário.", 'warning');
                     }
                 });
             }
         });
     }, (error) => {
         console.error("Error fetching posts:", error);
-        showMessage(postsContainer, "Erro ao carregar posts.", 'error');
+        if (postsContainer) showMessage(postsContainer, "Erro ao carregar posts.", 'error');
     });
 }
 
 
 // --- Chat Privado ---
 let currentChatRecipientId = null;
-let unsubscribeChatMessages = null; // Para desinscrição de listeners de chat
+let unsubscribeChatMessages = null;
 
 async function loadChatUsers() {
+    if (!chatRecipientSelect) return;
     chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>';
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -441,10 +461,10 @@ async function loadChatUsers() {
     if (!chatRecipientSelect.dataset.listenerAdded) {
         chatRecipientSelect.addEventListener('change', (event) => {
             currentChatRecipientId = event.target.value;
-            chatMessagesDisplay.innerHTML = '';
+            if (chatMessagesDisplay) chatMessagesDisplay.innerHTML = '';
             if (currentChatRecipientId) {
                 if (unsubscribeChatMessages) {
-                    unsubscribeChatMessages(); // Desinscreve o listener anterior
+                    unsubscribeChatMessages();
                 }
                 unsubscribeChatMessages = listenForChatMessages(currentUser.uid, currentChatRecipientId);
             }
@@ -454,6 +474,8 @@ async function loadChatUsers() {
 }
 
 function listenForChatMessages(user1Id, user2Id) {
+    if (!chatMessagesDisplay) return null; // Retorna null se o elemento não existir
+
     const chatCollectionRef = collection(db, "privateChats");
 
     const q1 = query(chatCollectionRef,
@@ -485,12 +507,14 @@ function listenForChatMessages(user1Id, user2Id) {
             });
             chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
         });
-        return unsubscribe2; // Retorna a função para desinscrever o segundo listener
+        return unsubscribe2;
     });
-    return unsubscribe1; // Retorna a função para desinscrever o primeiro listener
+    return unsubscribe1;
 }
 
 function displayChatMessage(message) {
+    if (!chatMessagesDisplay) return;
+
     const messageElement = document.createElement('div');
     messageElement.classList.add('message-bubble');
     const currentUser = auth.currentUser;
@@ -518,21 +542,21 @@ function displayChatMessage(message) {
 
 
 // --- Enviar mensagem no chat (SOMENTE TEXTO) ---
-chatSendMessageBtn.addEventListener("click", async () => {
-    const text = chatMessageInput.value.trim();
+if (chatSendMessageBtn) chatSendMessageBtn.addEventListener("click", async () => {
+    const text = chatMessageInput ? chatMessageInput.value.trim() : '';
     const user = auth.currentUser;
-    const recipientId = chatRecipientSelect.value;
+    const recipientId = chatRecipientSelect ? chatRecipientSelect.value : '';
 
     if (!user) {
-        showMessage(chatMessageDiv, "Você precisa estar logado para enviar mensagens.", 'error');
+        if (chatMessageDiv) showMessage(chatMessageDiv, "Você precisa estar logado para enviar mensagens.", 'error');
         return;
     }
     if (!recipientId) {
-        showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
+        if (chatMessageDiv) showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
         return;
     }
     if (!text) {
-        showMessage(chatMessageDiv, "Digite uma mensagem.", 'error');
+        if (chatMessageDiv) showMessage(chatMessageDiv, "Digite uma mensagem.", 'error');
         return;
     }
 
@@ -552,53 +576,57 @@ chatSendMessageBtn.addEventListener("click", async () => {
             timestamp: serverTimestamp()
         });
 
-        showMessage(chatMessageDiv, "Mensagem enviada!");
-        chatMessageInput.value = '';
+        if (chatMessageDiv) showMessage(chatMessageDiv, "Mensagem enviada!");
+        if (chatMessageInput) chatMessageInput.value = '';
     } catch (error) {
-        showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
+        if (chatMessageDiv) showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
         console.error("Erro ao enviar mensagem de chat:", error);
     }
 });
 
 // --- Funções de Feed de Novidades ---
 
-let unsubscribeNewActivity = null; // Para guardar a função de desinscrição do feed de novidades
+let unsubscribeNewActivity = null;
 
-// Listener de novidades em tempo real para o contador
 async function setupNewActivityListener(userId) {
     if (unsubscribeNewActivity) {
         unsubscribeNewActivity();
     }
+    if (!notificationCountSpan || !openNotificationsBtn) return;
 
     const userRef = doc(db, "users", userId);
-    const userDocSnap = await getDoc(userRef);
-    let lastViewedActivities = null;
-    if (userDocSnap.exists()) {
-        lastViewedActivities = userDocSnap.data().lastViewedActivities?.toDate() || new Date(0); // Use 0 para garantir que pegue tudo se for nulo
-    } else {
-        // Se o documento do usuário não existir ou não tiver lastViewedActivities, crie-o
-        await setDoc(userRef, { lastViewedActivities: serverTimestamp() }, { merge: true });
-        lastViewedActivities = new Date();
+    let lastViewedActivities = new Date(0); // Padrão para pegar tudo se não encontrar
+
+    try {
+        const userDocSnap = await getDoc(userRef);
+        if (userDocSnap.exists() && userDocSnap.data().lastViewedActivities) {
+            lastViewedActivities = userDocSnap.data().lastViewedActivities.toDate();
+        } else {
+            // Se o documento do usuário não tiver lastViewedActivities, defina um inicial
+            await setDoc(userRef, { lastViewedActivities: serverTimestamp() }, { merge: true });
+            lastViewedActivities = new Date(); // Para o cálculo imediato
+        }
+    } catch (error) {
+        console.error("Erro ao obter lastViewedActivities do usuário:", error);
+        // Continua com lastViewedActivities como new Date(0)
     }
 
-
-    // Listener para novos posts
     const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"));
-    const unsubscribePosts = onSnapshot(postsQuery, (postsSnapshot) => {
-        let newPostsCount = 0;
-        postsSnapshot.forEach((postDoc) => {
-            const postTimestamp = postDoc.data().timestamp ? postDoc.data().timestamp.toDate() : new Date();
-            if (postTimestamp > lastViewedActivities) {
-                newPostsCount++;
-            }
-        });
+    const messagesQuery = query(collection(db, "privateChats"),
+        where("recipientId", "==", userId),
+        orderBy("timestamp", "desc")
+    );
 
-        // Listener para novas mensagens
-        const messagesQuery = query(collection(db, "privateChats"),
-            where("recipientId", "==", userId),
-            orderBy("timestamp", "desc")
-        );
+    const unsubscribePosts = onSnapshot(postsQuery, (postsSnapshot) => {
         const unsubscribeMessages = onSnapshot(messagesQuery, (messagesSnapshot) => {
+            let newPostsCount = 0;
+            postsSnapshot.forEach((postDoc) => {
+                const postTimestamp = postDoc.data().timestamp ? postDoc.data().timestamp.toDate() : new Date();
+                if (postTimestamp > lastViewedActivities) {
+                    newPostsCount++;
+                }
+            });
+
             let newMessagesCount = 0;
             messagesSnapshot.forEach((msgDoc) => {
                 const msgTimestamp = msgDoc.data().timestamp ? msgDoc.data().timestamp.toDate() : new Date();
@@ -607,7 +635,7 @@ async function setupNewActivityListener(userId) {
                 }
             });
 
-            const totalNewActivityCount = newPostsCount + newMessagesCount; // Soma posts e mensagens
+            const totalNewActivityCount = newPostsCount + newMessagesCount;
 
             notificationCountSpan.textContent = totalNewActivityCount;
             if (totalNewActivityCount > 0) {
@@ -618,21 +646,21 @@ async function setupNewActivityListener(userId) {
                 openNotificationsBtn.classList.remove('new-activity-alert');
             }
         }, (error) => {
-            console.error("Erro ao ouvir por novas mensagens de chat:", error);
+            console.error("Erro ao ouvir por novas mensagens de chat para o contador:", error);
         });
-        // Combine a desinscrição de ambos os listeners
-        unsubscribeNewActivity = () => {
+        unsubscribeNewActivity = () => { // Função combinada para desinscrição
             unsubscribePosts();
             unsubscribeMessages();
         };
     }, (error) => {
-        console.error("Erro ao ouvir por novos posts:", error);
+        console.error("Erro ao ouvir por novos posts para o contador:", error);
     });
 }
 
 // Carrega o feed de novidades (posts e mensagens recentes)
 async function loadNewActivityFeed() {
-    notificationsList.innerHTML = ''; // Limpa a lista existente
+    if (!notificationsList) return;
+    notificationsList.innerHTML = '';
     const currentUser = auth.currentUser;
     if (!currentUser) {
         notificationsList.innerHTML = '<p style="color:red;">Faça login para ver suas novidades.</p>';
@@ -641,137 +669,144 @@ async function loadNewActivityFeed() {
 
     const allActivityItems = [];
 
-    // 1. Buscar posts recentes
-    const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(10));
-    const postsSnapshot = await getDocs(postsQuery);
-    postsSnapshot.forEach(doc => {
-        const post = doc.data();
-        allActivityItems.push({
-            type: 'post',
-            id: doc.id,
-            timestamp: post.timestamp,
-            content: post.content,
-            username: post.username || post.userId
+    try {
+        // 1. Buscar posts recentes
+        const postsQuery = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(10));
+        const postsSnapshot = await getDocs(postsQuery);
+        postsSnapshot.forEach(doc => {
+            const post = doc.data();
+            allActivityItems.push({
+                type: 'post',
+                id: doc.id,
+                timestamp: post.timestamp,
+                content: post.content,
+                username: post.username || post.userId
+            });
         });
-    });
 
-    // 2. Buscar mensagens de chat recentes envolvendo o usuário
-    const chatQuery1 = query(collection(db, "privateChats"),
-        where("senderId", "==", currentUser.uid),
-        orderBy("timestamp", "desc"),
-        limit(10)
-    );
-    const chatQuery2 = query(collection(db, "privateChats"),
-        where("recipientId", "==", currentUser.uid),
-        orderBy("timestamp", "desc"),
-        limit(10)
-    );
+        // 2. Buscar mensagens de chat recentes envolvendo o usuário
+        const chatQuery1 = query(collection(db, "privateChats"),
+            where("senderId", "==", currentUser.uid),
+            orderBy("timestamp", "desc"),
+            limit(10)
+        );
+        const chatQuery2 = query(collection(db, "privateChats"),
+            where("recipientId", "==", currentUser.uid),
+            orderBy("timestamp", "desc"),
+            limit(10)
+        );
 
-    const [chatSnapshot1, chatSnapshot2] = await Promise.all([getDocs(chatQuery1), getDocs(chatQuery2)]);
+        const [chatSnapshot1, chatSnapshot2] = await Promise.all([getDocs(chatQuery1), getDocs(chatQuery2)]);
 
-    chatSnapshot1.forEach(doc => {
-        const msg = doc.data();
-        allActivityItems.push({
-            type: 'sent_message',
-            id: doc.id,
-            timestamp: msg.timestamp,
-            message: msg.message,
-            recipientId: msg.recipientId,
-            senderUsername: msg.senderUsername,
-            recipientUsername: "" // Será preenchido
+        chatSnapshot1.forEach(doc => {
+            const msg = doc.data();
+            allActivityItems.push({
+                type: 'sent_message',
+                id: doc.id,
+                timestamp: msg.timestamp,
+                message: msg.message,
+                recipientId: msg.recipientId,
+                senderUsername: msg.senderUsername,
+                recipientUsername: "" // Será preenchido
+            });
         });
-    });
 
-    chatSnapshot2.forEach(doc => {
-        const msg = doc.data();
-        allActivityItems.push({
-            type: 'received_message',
-            id: doc.id,
-            timestamp: msg.timestamp,
-            message: msg.message,
-            senderId: msg.senderId,
-            senderUsername: msg.senderUsername,
-            recipientUsername: "" // Será preenchido
+        chatSnapshot2.forEach(doc => {
+            const msg = doc.data();
+            allActivityItems.push({
+                type: 'received_message',
+                id: doc.id,
+                timestamp: msg.timestamp,
+                message: msg.message,
+                senderId: msg.senderId,
+                senderUsername: msg.senderUsername,
+                recipientUsername: "" // Será preenchido
+            });
         });
-    });
 
-    // 3. Obter nomes de usuário para mensagens
-    const userPromises = [];
-    const usersMap = new Map(); // Para evitar buscas duplicadas
+        // 3. Obter nomes de usuário para mensagens
+        const userPromises = [];
+        const usersMap = new Map();
 
-    allActivityItems.filter(item => item.type === 'sent_message' || item.type === 'received_message')
-                     .forEach(item => {
-        const otherUserId = item.type === 'sent_message' ? item.recipientId : item.senderId;
-        if (otherUserId && !usersMap.has(otherUserId)) {
-            userPromises.push(getDoc(doc(db, "users", otherUserId)).then(userDoc => {
-                if (userDoc.exists()) {
-                    usersMap.set(otherUserId, userDoc.data().username || userDoc.data().email);
-                } else {
-                    usersMap.set(otherUserId, "Usuário Desconhecido");
-                }
-            }));
+        allActivityItems.filter(item => item.type === 'sent_message' || item.type === 'received_message')
+                         .forEach(item => {
+            const otherUserId = item.type === 'sent_message' ? item.recipientId : item.senderId;
+            if (otherUserId && !usersMap.has(otherUserId)) {
+                userPromises.push(getDoc(doc(db, "users", otherUserId)).then(userDoc => {
+                    if (userDoc.exists()) {
+                        usersMap.set(otherUserId, userDoc.data().username || userDoc.data().email);
+                    } else {
+                        usersMap.set(otherUserId, "Usuário Desconhecido");
+                    }
+                }));
+            }
+        });
+
+        await Promise.all(userPromises);
+
+        // Atribuir nomes de usuário
+        allActivityItems.forEach(item => {
+            if (item.type === 'sent_message') {
+                item.recipientUsername = usersMap.get(item.recipientId) || "Usuário Desconhecido";
+            } else if (item.type === 'received_message') {
+                item.senderUsername = usersMap.get(item.senderId) || "Usuário Desconhecido";
+            }
+        });
+
+
+        // 4. Ordenar todos os itens por timestamp (mais recentes primeiro)
+        allActivityItems.sort((a, b) => {
+            const tsA = a.timestamp?.toDate() || new Date(0);
+            const tsB = b.timestamp?.toDate() || new Date(0);
+            return tsB.getTime() - tsA.getTime();
+        });
+
+        // 5. Exibir no feed
+        if (allActivityItems.length === 0) {
+            const noActivityMessage = document.createElement('p');
+            noActivityMessage.textContent = "Nenhuma novidade ainda.";
+            notificationsList.appendChild(noActivityMessage);
+            return;
         }
-    });
 
-    await Promise.all(userPromises);
+        allActivityItems.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.classList.add('activity-item');
+            itemElement.style.marginBottom = '10px';
+            itemElement.style.padding = '10px';
+            itemElement.style.border = '1px solid #eee';
+            itemElement.style.borderRadius = '5px';
 
-    // Atribuir nomes de usuário
-    allActivityItems.forEach(item => {
-        if (item.type === 'sent_message') {
-            item.recipientUsername = usersMap.get(item.recipientId) || "Usuário Desconhecido";
-        } else if (item.type === 'received_message') {
-            item.senderUsername = usersMap.get(item.senderId) || "Usuário Desconhecido";
-        }
-    });
+            const timestampStr = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString() : 'Carregando...';
 
-
-    // 4. Ordenar todos os itens por timestamp (mais recentes primeiro)
-    allActivityItems.sort((a, b) => {
-        const tsA = a.timestamp?.toDate() || new Date(0);
-        const tsB = b.timestamp?.toDate() || new Date(0);
-        return tsB.getTime() - tsA.getTime();
-    });
-
-    // 5. Exibir no feed
-    if (allActivityItems.length === 0) {
-        const noActivityMessage = document.createElement('p');
-        noActivityMessage.textContent = "Nenhuma novidade ainda.";
-        notificationsList.appendChild(noActivityMessage);
-        return;
+            if (item.type === 'post') {
+                itemElement.innerHTML = `
+                    <h4>Novo Post de ${item.username}:</h4>
+                    <p>${item.content}</p>
+                    <small>${timestampStr}</small>
+                `;
+            } else if (item.type === 'sent_message') {
+                itemElement.innerHTML = `
+                    <h4>Mensagem Enviada para ${item.recipientUsername}:</h4>
+                    <p>"${item.message}"</p>
+                    <small>${timestampStr}</small>
+                `;
+            } else if (item.type === 'received_message') {
+                itemElement.innerHTML = `
+                    <h4>Mensagem Recebida de ${item.senderUsername}:</h4>
+                    <p>"${item.message}"</p>
+                    <small>${timestampStr}</small>
+                `;
+            }
+            notificationsList.appendChild(itemElement);
+        });
+    } catch (error) {
+        console.error("Erro ao carregar feed de novidades:", error);
+        const errorMessage = document.createElement('p');
+        errorMessage.style.color = 'red';
+        errorMessage.textContent = "Erro ao carregar feed de novidades.";
+        notificationsList.appendChild(errorMessage);
     }
-
-    allActivityItems.forEach(item => {
-        const itemElement = document.createElement('div');
-        itemElement.classList.add('activity-item');
-        itemElement.style.marginBottom = '10px';
-        itemElement.style.padding = '10px';
-        itemElement.style.border = '1px solid #eee';
-        itemElement.style.borderRadius = '5px';
-
-        const timestampStr = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleString() : 'Carregando...';
-
-        if (item.type === 'post') {
-            itemElement.innerHTML = `
-                <h4>Novo Post de ${item.username}:</h4>
-                <p>${item.content}</p>
-                <small>${timestampStr}</small>
-            `;
-        } else if (item.type === 'sent_message') {
-            itemElement.innerHTML = `
-                <h4>Mensagem Enviada para ${item.recipientUsername}:</h4>
-                <p>"${item.message}"</p>
-                <small>${timestampStr}</small>
-            `;
-        } else if (item.type === 'received_message') {
-            itemElement.innerHTML = `
-                <h4>Mensagem Recebida de ${item.senderUsername}:</h4>
-                <p>"${item.message}"</p>
-                <small>${timestampStr}</small>
-            `;
-        }
-        // Futuramente, pode adicionar tipos para comentários/curtidas se a lógica de dados for ajustada
-        notificationsList.appendChild(itemElement);
-    });
 }
 
 // Marca o momento atual como a última vez que o usuário visualizou as novidades
@@ -783,7 +818,6 @@ async function markLastViewedAsCurrent() {
             await updateDoc(userRef, {
                 lastViewedActivities: serverTimestamp()
             });
-            // O listener de novidades vai reagir a essa mudança e zerar o contador
         } catch (error) {
             console.error("Erro ao marcar atividades como vistas:", error);
         }
