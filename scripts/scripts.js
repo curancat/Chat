@@ -4,14 +4,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebas
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
+// REMOVIDO: import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
   authDomain: "vlog-8a75f.firebaseapp.com",
   projectId: "vlog-8a75f",
-  storageBucket: "vlog-8a75f.firebasestorage.app",
+  storageBucket: "vlog-8a75f.firebasestorage.app", // Pode manter, mas não será usado para conteúdo do usuário
   messagingSenderId: "1063952650353",
   appId: "1:1063952650353:web:25f37c51b49daeaf81cbd0",
   measurementId: "G-GRM2E926W3"
@@ -22,7 +22,7 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
+// REMOVIDO: const storage = getStorage(app); // Storage não será mais inicializado para upload de conteúdo do usuário
 
 // --- Elementos DOM ---
 const loginEmail = document.getElementById("loginEmail");
@@ -38,14 +38,14 @@ const registerMessage = document.getElementById("registerMessage");
 
 const publishPostBtn = document.getElementById("publishPostBtn");
 const postContent = document.getElementById("postContent");
-const postImage = document.getElementById("postImage");
+// REMOVIDO: const postImage = document.getElementById("postImage");
 // REMOVIDO: const postVideo = document.getElementById("postVideo");
 // REMOVIDO: const postAudio = document.getElementById("postAudio");
 const postMessage = document.getElementById("postMessage");
 
 const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
 const chatMessageInput = document.getElementById("chatMessageInput");
-const chatMediaInput = document.getElementById("chatMediaInput");
+// REMOVIDO: const chatMediaInput = document.getElementById("chatMediaInput");
 const chatMessageDiv = document.getElementById("chatMessage");
 const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
 const chatRecipientSelect = document.getElementById("chatRecipientSelect");
@@ -117,14 +117,14 @@ registerBtn.addEventListener('click', () => {
 createPostBtn.addEventListener('click', () => {
     hideAllForms();
     createPostSection.classList.add('active');
-    // Você também deve remover os inputs de video e audio do seu HTML
+    // CERTIFIQUE-SE DE REMOVER OS INPUTS DE IMAGEM, VÍDEO E ÁUDIO DO SEU HTML!
 });
 
 openChatBtn.addEventListener('click', () => {
     hideAllForms();
     chatSection.classList.add('active');
     loadChatUsers();
-    // Você também deve remover o input de chat media do seu HTML se for apenas texto
+    // CERTIFIQUE-SE DE REMOVER O INPUT DE MÍDIA DO CHAT DO SEU HTML!
 });
 
 viewFeedBtn.addEventListener('click', () => {
@@ -197,7 +197,7 @@ onAuthStateChanged(auth, (user) => {
 });
 
 
-// --- Publicar Post (SOMENTE TEXTO E IMAGEM) ---
+// --- Publicar Post (SOMENTE TEXTO) ---
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value;
     const user = auth.currentUser;
@@ -208,26 +208,6 @@ publishPostBtn.addEventListener("click", async () => {
     }
 
     const postDocRef = doc(collection(db, "posts"));
-    let imageURL = null; // Inicializa imageURL como null
-
-    const uploadFile = async (input, type) => {
-        const file = input.files[0];
-        if (!file) return null;
-
-        // Verifica se é um arquivo de imagem
-        if (!file.type.startsWith('image/')) {
-            showMessage(postMessage, "Apenas imagens são permitidas para upload de mídia no post.", 'error');
-            return null; // Retorna null se não for imagem
-        }
-
-        const storageRef = ref(storage, `posts/${postDocRef.id}/${type}-${file.name}`);
-        await uploadBytes(storageRef, file);
-        return await getDownloadURL(storageRef);
-    };
-
-    // Tenta fazer upload apenas da imagem
-    imageURL = await uploadFile(postImage, 'imagem');
-
 
     try {
         // Obter o nome de usuário para o post
@@ -243,14 +223,10 @@ publishPostBtn.addEventListener("click", async () => {
             userId: user.uid,
             username: username,
             timestamp: serverTimestamp(),
-            imageURL: imageURL // imageURL será null se não houver imagem ou se o upload falhar
-            // REMOVIDO: videoURL, audioURL não serão mais salvos
+            // REMOVIDO: imageURL, videoURL, audioURL não serão mais salvos
         });
 
         postContent.value = '';
-        postImage.value = '';
-        // REMOVIDO: postVideo.value = '';
-        // REMOVIDO: postAudio.value = '';
         showMessage(postMessage, "Post publicado com sucesso!");
     } catch (error) {
         showMessage(postMessage, "Erro ao publicar post.", 'error');
@@ -271,7 +247,6 @@ function loadPosts() {
             postElement.innerHTML = `
                 <h3>${post.username || post.userId}</h3>
                 <p>${post.content}</p>
-                ${post.imageURL ? `<img src="${post.imageURL}" alt="Post Image">` : ''}
                 <small>${new Date(post.timestamp?.toDate()).toLocaleString()}</small>
             `;
             postsContainer.appendChild(postElement);
@@ -364,23 +339,10 @@ function displayChatMessage(message) {
     }
 
     let contentHTML = '';
-    // Prioriza exibir o texto da mensagem
+    // Apenas exibe o texto da mensagem
     if (message.message) {
         contentHTML = `<p>${message.message}</p>`;
     }
-
-    // Se houver uma imagem, adiciona ao conteúdo HTML
-    if (message.type === 'image' && message.mediaURL) {
-        contentHTML += `<img src="${message.mediaURL}" alt="Chat Image">`;
-    }
-    // REMOVIDO: Lógica para exibir vídeo
-    // else if (message.type === 'video' && message.mediaURL) {
-    //     contentHTML = `<video controls src="${message.mediaURL}"></video>`;
-    // }
-    // REMOVIDO: Lógica para exibir áudio
-    // else if (message.type === 'audio' && message.mediaURL) {
-    //     contentHTML = `<audio controls src="${message.mediaURL}"></audio>`;
-    // }
 
     messageElement.innerHTML = `
         <strong>${senderName}</strong>
@@ -391,10 +353,10 @@ function displayChatMessage(message) {
 }
 
 
-// --- Enviar mensagem no chat (texto e imagens) ---
+// --- Enviar mensagem no chat (SOMENTE TEXTO) ---
 chatSendMessageBtn.addEventListener("click", async () => {
     const text = chatMessageInput.value.trim();
-    const mediaFile = chatMediaInput.files[0];
+    // REMOVIDO: const mediaFile = chatMediaInput.files[0];
     const user = auth.currentUser;
     const recipientId = chatRecipientSelect.value;
 
@@ -406,26 +368,13 @@ chatSendMessageBtn.addEventListener("click", async () => {
         showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
         return;
     }
-    // Permite enviar só texto, só imagem, ou texto com imagem
-    if (!text && !mediaFile) {
-        showMessage(chatMessageDiv, "Digite uma mensagem ou selecione uma imagem.", 'error');
+    if (!text) { // Agora exige apenas texto
+        showMessage(chatMessageDiv, "Digite uma mensagem.", 'error');
         return;
     }
-    if (mediaFile && !mediaFile.type.startsWith('image/')) {
-        showMessage(chatMessageDiv, "Apenas imagens são permitidas para upload no chat.", 'error');
-        return;
-    }
-
 
     try {
-        let mediaURL = null;
-        let mediaType = null;
-        if (mediaFile) {
-            const storageRef = ref(storage, `chat_media/${user.uid}/${recipientId}/${Date.now()}-${mediaFile.name}`);
-            await uploadBytes(storageRef, mediaFile);
-            mediaURL = await getDownloadURL(storageRef);
-            mediaType = mediaFile.type.split("/")[0]; // Será 'image'
-        }
+        // REMOVIDO: Lógica de upload de mídia
 
         // Obter nome de usuário do remetente
         const senderDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
@@ -438,15 +387,15 @@ chatSendMessageBtn.addEventListener("click", async () => {
             senderId: user.uid,
             senderUsername: senderUsername,
             recipientId: recipientId,
-            message: text || null, // Armazena null se o campo de texto estiver vazio
-            mediaURL: mediaURL || null, // Armazena null se não houver mídia
-            type: mediaType || (text ? 'text' : 'unknown'), // Define o tipo
+            message: text, // Apenas o texto
+            // REMOVIDO: mediaURL, type (para mídia)
+            type: 'text', // O tipo é sempre texto agora
             timestamp: serverTimestamp()
         });
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
-        chatMediaInput.value = ''; // Limpa input de arquivo
+        // REMOVIDO: chatMediaInput.value = '';
     } catch (error) {
         showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
         console.error("Erro ao enviar mensagem de chat:", error);
