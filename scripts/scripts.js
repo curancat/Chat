@@ -5,15 +5,23 @@ import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc, getDoc, limit } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
+// SUBCONFIGURE ESTE OBJETO COM AS SUAS CREDENCIAIS DO FIREBASE
+// As credenciais fornecidas no seu scripts.js anterior eram:
+// apiKey: "AIzaSyCN717SOcHkdqhuAZq7ZoEM-2gGb1sFjEY",
+// authDomain: "vlog-a698a.firebaseapp.com",
+// projectId: "vlog-a698a",
+// storageBucket: "vlog-a698a.firebasestorage.app",
+// messagingSenderId: "24061559591",
+// appId: "1:24061559591:web:f7be730a33d0c0b856df02",
+// measurementId: "G-ZGV3LDM3QD"
 const firebaseConfig = {
-  apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
-  authDomain: "vlog-8a75f.firebaseapp.com",
-  projectId: "vlog-8a75f",
-  storageBucket: "vlog-8a75f.firebasestorage.app",
-  messagingSenderId: "1063952650353",
-  appId: "1:1063952650353:web:25f37c51b49daeaf81cbd0",
-  measurementId: "G-GRM2E926W3"
+  apiKey: "AIzaSyCN717SOcHkdqhuAZq7ZoEM-2gGb1sFjEY", // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
+  authDomain: "vlog-a698a.firebaseapp.com", // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
+  projectId: "vlog-a698a", // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
+  storageBucket: "vlog-a698a.firebasestorage.app", // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
+  messagingSenderId: "24061559591", // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
+  appId: "1:24061559591:web:f7be730a33d0c0b856df02", // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
+  measurementId: "G-ZGV3LDM3QD" // VERIFIQUE SE ESTÁ CORRETO PARA O SEU PROJETO
 };
 
 // Inicializa o Firebase
@@ -189,7 +197,6 @@ if (registerSubmit) registerSubmit.addEventListener("click", () => {
             return setDoc(doc(db, "users", cred.user.uid), {
                 username,
                 email,
-                // Removido lastViewedActivities para simplificar
             }, { merge: true });
         })
         .then(() => {
@@ -471,8 +478,7 @@ async function loadChatUsers() {
             currentChatRecipientId = event.target.value;
             if (chatMessagesDisplay) chatMessagesDisplay.innerHTML = '';
             if (currentChatRecipientId) {
-                if (unsubscribeChatMessages) {
-                    unsubscribeChatMessages();
+                unsubscribeChatMessages();
                 }
                 unsubscribeChatMessages = listenForChatMessages(currentUser.uid, currentChatRecipientId);
             }
@@ -489,31 +495,23 @@ function listenForChatMessages(user1Id, user2Id) {
 
     const chatCollectionRef = collection(db, "privateChats");
 
-    const q1 = query(chatCollectionRef,
-        where("senderId", "==", user1),
-        where("recipientId", "==", user2Id),
-        orderBy("timestamp", "asc")
-    );
-    const q2 = query(chatCollectionRef,
-        where("senderId", "==", user2Id),
-        where("recipientId", "==", user1Id),
-        orderBy("timestamp", "asc")
-    );
+    // O Firebase não permite consultas "OR" diretas em onSnapshot para múltiplas condições de campo.
+    // A abordagem mais robusta para chats bidirecionais é buscar todas as mensagens e filtrá-las no cliente,
+    // ou manter um campo 'participants' com um array [user1Id, user2Id] e usar 'array-contains-all'.
+    // Para simplificar e garantir que todas as mensagens entre os dois usuários são vistas,
+    // vamos ouvir todos os documentos na coleção 'privateChats' e filtrar localmente.
+    // Esta não é a forma mais otimizada para coleções grandes, mas garante a funcionalidade agora.
 
-    // Usa Promise.all para combinar os snapshots de ambos os queries
-    const combinedUnsubscribe = onSnapshot(query(collection(db, "privateChats")), async (overallSnapshot) => {
+    const unsubscribe = onSnapshot(chatCollectionRef, (snapshot) => {
         const allMessages = [];
-        const messagesFromQ1 = overallSnapshot.docs.filter(doc => {
+        snapshot.forEach(doc => {
             const data = doc.data();
-            return (data.senderId === user1Id && data.recipientId === user2Id);
+            // Filtra as mensagens relevantes para o chat atual entre user1Id e user2Id
+            if ((data.senderId === user1Id && data.recipientId === user2Id) ||
+                (data.senderId === user2Id && data.recipientId === user1Id)) {
+                allMessages.push(data);
+            }
         });
-        const messagesFromQ2 = overallSnapshot.docs.filter(doc => {
-            const data = doc.data();
-            return (data.senderId === user2Id && data.recipientId === user1Id);
-        });
-
-        messagesFromQ1.forEach(doc => allMessages.push(doc.data()));
-        messagesFromQ2.forEach(doc => allMessages.push(doc.data()));
 
         allMessages.sort((a, b) => {
             const timestampA = a.timestamp?.toDate() || new Date(0);
@@ -531,7 +529,7 @@ function listenForChatMessages(user1Id, user2Id) {
         if (chatMessagesDisplay) chatMessagesDisplay.innerHTML = '<p style="color:red;">Erro ao carregar mensagens do chat.</p>';
     });
 
-    return combinedUnsubscribe;
+    return unsubscribe;
 }
 
 
