@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Good-Vibes</title>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <h1>Good-Vibes</h1>
+  <nav>
+    <button id="loginBtn">Login</button>
+    <button id="registerBtn">Cadastrar</button>
+    <button id="logoutBtn" style="display: none;">Sair</button>
+    <button id="viewFeedBtn" style="display: none;">Ver Feed</button>
+    <button id="createPostBtn" style="display: none;">Criar Post</button>
+    <button id="openChatBtn" style="display: none;">Chat Privado</button>
+  </nav>
+
+  <div id="loginFormContainer" class="form-container active">
+    <h2>Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email" required />
+    <input type="password" id="loginPassword" placeholder="Senha" required />
+    <input type="submit" value="Entrar" id="loginSubmit" />
+    <div id="loginMessage" class="message"></div>
+  </div>
+
+  <div id="registerFormContainer" class="form-container">
+    <h2>Cadastrar</h2>
+    <input type="text" id="registerUsername" placeholder="Nome de Usuário" required />
+    <input type="email" id="registerEmail" placeholder="Email" required />
+    <input type="password" id="registerPassword" placeholder="Senha" required />
+    <input type="submit" value="Registrar" id="registerSubmit" />
+    <div id="registerMessage" class="message"></div>
+  </div>
+
+  <div id="createPostSection" class="form-container">
+    <h2>Nova Vibe</h2>
+    <textarea id="postContent" placeholder="Compartilhe sua vibe..." rows="4"></textarea>
+    <p>Imagem: <input type="file" id="postImage" accept="image/*" /></p>
+    <p>Vídeo: <input type="file" id="postVideo" accept="video/*" /></p>
+    <p>Áudio: <input type="file" id="postAudio" accept="audio/*" /></p>
+    <input type="submit" value="Publicar Vibe" id="publishPostBtn" />
+    <div id="postMessage" class="message"></div>
+  </div>
+
+  <div id="chatSection" class="form-container">
+    <h2>Chat Privado</h2>
+    <select id="chatRecipientSelect" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ddd;"></select>
+    <div id="chatMessagesDisplay" class="messages-container">
+      </div>
+    <div class="message-input-area">
+      <input type="text" id="chatMessageInput" placeholder="Digite sua mensagem..." />
+      <input type="file" id="chatMediaInput" accept="image/*,video/*,audio/*" style="display: none;" />
+      <label for="chatMediaInput" class="button" style="padding: 8px 12px; border-radius: 5px; background-color: #ADD8E6; color: #fff; border: none; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: background-color 0.2s ease;">Anexar</label>
+      <button id="chatSendMessageBtn">Enviar</button>
+    </div>
+    <div id="chatMessage" class="message"></div>
+  </div>
+
+  <div id="feedSection" class="form-container">
+    <h2>Feed de Vibes</h2>
+    <div id="postsContainer" class="posts-container">
+      </div>
+  </div>
+
+  <script src="scripts/scripts.js" type="module"></script>
+</body>
+</html>
