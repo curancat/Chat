@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 // REMOVIDO: import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
@@ -38,14 +38,10 @@ const registerMessage = document.getElementById("registerMessage");
 
 const publishPostBtn = document.getElementById("publishPostBtn");
 const postContent = document.getElementById("postContent");
-// REMOVIDO: const postImage = document.getElementById("postImage");
-// REMOVIDO: const postVideo = document.getElementById("postVideo");
-// REMOVIDO: const postAudio = document.getElementById("postAudio");
 const postMessage = document.getElementById("postMessage");
 
 const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
 const chatMessageInput = document.getElementById("chatMessageInput");
-// REMOVIDO: const chatMediaInput = document.getElementById("chatMediaInput");
 const chatMessageDiv = document.getElementById("chatMessage");
 const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
 const chatRecipientSelect = document.getElementById("chatRecipientSelect");
@@ -130,7 +126,7 @@ openChatBtn.addEventListener('click', () => {
 viewFeedBtn.addEventListener('click', () => {
     hideAllForms();
     feedSection.classList.add('active');
-    loadPosts();
+    loadPosts(); // Garante que posts sejam carregados ao ir para o feed
 });
 
 // --- Autenticação ---
@@ -217,13 +213,14 @@ publishPostBtn.addEventListener("click", async () => {
             username = doc.data().username || user.email;
         });
 
-        // Salvar o post no Firestore
+        // Salvar o post no Firestore com campos de curtidas vazios/iniciados
         await setDoc(postDocRef, {
             content: content,
             userId: user.uid,
             username: username,
             timestamp: serverTimestamp(),
-            // REMOVIDO: imageURL, videoURL, audioURL não serão mais salvos
+            likesCount: 0, // NOVO: Contador de curtidas
+            likedBy: []    // NOVO: Array para armazenar IDs dos usuários que curtiram
         });
 
         postContent.value = '';
@@ -234,6 +231,40 @@ publishPostBtn.addEventListener("click", async () => {
     }
 });
 
+// --- Função para Curtir/Descurtir um Post ---
+async function toggleLike(postId, currentLikesCount, likedByUserIds) {
+    const user = auth.currentUser;
+    if (!user) {
+        showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
+        return;
+    }
+
+    const postRef = doc(db, "posts", postId);
+    const userId = user.uid;
+
+    try {
+        if (likedByUserIds.includes(userId)) {
+            // Usuário já curtiu, então descurtir
+            await updateDoc(postRef, {
+                likesCount: increment(-1), // Decrementa o contador
+                likedBy: arrayRemove(userId) // Remove o ID do usuário do array
+            });
+            showMessage(postMessage, "Você descurtiu o post.");
+        } else {
+            // Usuário não curtiu, então curtir
+            await updateDoc(postRef, {
+                likesCount: increment(1), // Incrementa o contador
+                likedBy: arrayUnion(userId) // Adiciona o ID do usuário ao array
+            });
+            showMessage(postMessage, "Você curtiu o post!");
+        }
+    } catch (error) {
+        console.error("Erro ao curtir/descurtir o post:", error);
+        showMessage(postMessage, "Erro ao processar sua curtida.", 'error');
+    }
+}
+
+
 // --- Carregar Posts (Feed) ---
 function loadPosts() {
     postsContainer.innerHTML = '';
@@ -242,20 +273,49 @@ function loadPosts() {
         postsContainer.innerHTML = '';
         snapshot.forEach((doc) => {
             const post = doc.data();
+            const postId = doc.id; // Obtenha o ID do post
+            const currentUser = auth.currentUser;
+            const likedBy = post.likedBy || []; // Garante que likedBy seja um array
+            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false; // Verifica se o usuário logado curtiu
+
             const postElement = document.createElement('div');
             postElement.classList.add('post-card');
             postElement.innerHTML = `
                 <h3>${post.username || post.userId}</h3>
                 <p>${post.content}</p>
                 <small>${new Date(post.timestamp?.toDate()).toLocaleString()}</small>
+                <div class="post-actions">
+                    <button class="like-button ${isLiked ? 'liked' : ''}" data-post-id="${postId}" data-likes-count="${post.likesCount || 0}">
+                        ❤️ ${post.likesCount || 0}
+                    </button>
+                    <button class="comment-button" data-post-id="${postId}">💬 Comentar</button>
+                </div>
+                <div class="post-comments" data-post-id="${postId}">
+                    <h4>Comentários:</h4>
+                    <div class="comments-list"></div>
+                    <div class="comment-input-area">
+                        <input type="text" placeholder="Adicionar comentário..." class="comment-input">
+                        <button class="submit-comment-button">Enviar</button>
+                    </div>
+                </div>
             `;
             postsContainer.appendChild(postElement);
+
+            // Adiciona Event Listener para o botão de curtir
+            const likeButton = postElement.querySelector(`.like-button[data-post-id="${postId}"]`);
+            if (likeButton) {
+                likeButton.addEventListener('click', () => {
+                    const currentLikes = parseInt(likeButton.dataset.likesCount); // Pega o valor atual do atributo
+                    toggleLike(postId, currentLikes, likedBy); // Passa o array `likedBy` completo
+                });
+            }
         });
     }, (error) => {
         console.error("Error fetching posts:", error);
         showMessage(postsContainer, "Erro ao carregar posts.", 'error');
     });
 }
+
 
 // --- Chat Privado ---
 let currentChatRecipientId = null;
@@ -356,7 +416,6 @@ function displayChatMessage(message) {
 // --- Enviar mensagem no chat (SOMENTE TEXTO) ---
 chatSendMessageBtn.addEventListener("click", async () => {
     const text = chatMessageInput.value.trim();
-    // REMOVIDO: const mediaFile = chatMediaInput.files[0];
     const user = auth.currentUser;
     const recipientId = chatRecipientSelect.value;
 
@@ -374,11 +433,9 @@ chatSendMessageBtn.addEventListener("click", async () => {
     }
 
     try {
-        // REMOVIDO: Lógica de upload de mídia
-
         // Obter nome de usuário do remetente
         const senderDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        let senderUsername = user.email;
+        let senderUsername = user.data().username || user.email; // Prefere o username do usuário logado
         senderDocSnapshot.forEach((doc) => {
             senderUsername = doc.data().username || user.email;
         });
@@ -388,14 +445,12 @@ chatSendMessageBtn.addEventListener("click", async () => {
             senderUsername: senderUsername,
             recipientId: recipientId,
             message: text, // Apenas o texto
-            // REMOVIDO: mediaURL, type (para mídia)
             type: 'text', // O tipo é sempre texto agora
             timestamp: serverTimestamp()
         });
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
-        // REMOVIDO: chatMediaInput.value = '';
     } catch (error) {
         showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
         console.error("Erro ao enviar mensagem de chat:", error);
