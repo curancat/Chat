@@ -61,8 +61,6 @@ const feedSection = document.getElementById("feedSection");
 const notificationsSection = document.getElementById("notificationsSection");
 const postsContainer = document.getElementById("postsContainer");
 const notificationsList = document.getElementById("notificationsList");
-const postElementsMap = new Map(); // Guarda os elementos renderizados
-
 // --- Utilitários ---
 
 // Todas as seções que podem ser ativadas/desativadas
@@ -370,36 +368,38 @@ function loadComments(postId, commentsListElement) {
 
 
 // --- Carregar Posts (Feed) ---
+
+const postElementsMap = new Map(); // mantém referência dos posts renderizados
+
 function loadPosts() {
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
 
     onSnapshot(q, (snapshot) => {
         const postIdsFromFirebase = new Set();
 
-        snapshot.forEach((doc) => {
-            const post = doc.data();
-            const postId = doc.id;
+        snapshot.forEach((docSnap) => {
+            const post = docSnap.data();
+            const postId = docSnap.id;
             const currentUser = auth.currentUser;
             const likedBy = post.likedBy || [];
             const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
 
             postIdsFromFirebase.add(postId);
 
-            // Se o post já está no DOM, atualize só os dados relevantes
+            // Se já existe, atualiza os dados (sem recriar o elemento)
             if (postElementsMap.has(postId)) {
                 const existing = postElementsMap.get(postId);
-
-                // Atualiza conteúdo e likes
                 existing.querySelector('p').textContent = post.content;
+
                 const likeBtn = existing.querySelector('.like-button');
                 likeBtn.innerHTML = `❤️ ${post.likesCount || 0}`;
                 likeBtn.classList.toggle('liked', isLiked);
                 likeBtn.dataset.likesCount = post.likesCount || 0;
 
-                return; // Pula recriação
+                return;
             }
 
-            // Criar novo post se não existe
+            // Criar novo post
             const postElement = document.createElement('div');
             postElement.classList.add('post-card');
             postElement.innerHTML = `
@@ -425,27 +425,28 @@ function loadPosts() {
             postsContainer.appendChild(postElement);
             postElementsMap.set(postId, postElement);
 
-            // Eventos de Like
+            // 🎯 BOTÃO DE LIKE FUNCIONAL
             const likeButton = postElement.querySelector(`.like-button[data-post-id="${postId}"]`);
             if (likeButton) {
-              likeButton.addEventListener('click', async () => {
-              const currentLikes = parseInt(likeButton.dataset.likesCount);
-              try {
-                const postSnap = await getDoc(doc(db, "posts", postId));
-                if (postSnap.exists()) {
-                  const postData = postSnap.data();
-                  const updatedLikedBy = postData.likedBy || [];
-                  toggleLike(postId, currentLikes, updatedLikedBy, likeButton);
-                }
-              } catch (error) {
-                console.error("Erro ao buscar o post para curtir/descurtir:", error);
-              }
-              }
-            )};
-        }
-          
+                likeButton.addEventListener('click', async () => {
+                    const currentLikes = parseInt(likeButton.dataset.likesCount);
+                    const user = auth.currentUser;
+                    if (!user) return;
 
-            // Eventos de Comentário
+                    try {
+                        const postSnap = await getDoc(doc(db, "posts", postId));
+                        if (postSnap.exists()) {
+                            const postData = postSnap.data();
+                            const updatedLikedBy = postData.likedBy || [];
+                            toggleLike(postId, currentLikes, updatedLikedBy, likeButton);
+                        }
+                    } catch (error) {
+                        console.error("Erro ao buscar post para curtir/descurtir:", error);
+                    }
+                });
+            }
+
+            // BOTÕES DE COMENTÁRIO
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
             const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
             const commentsListElement = postCommentsSection.querySelector('.comments-list');
@@ -476,7 +477,7 @@ function loadPosts() {
             }
         });
 
-        // Remove posts que não estão mais no Firebase
+        // Remove posts que não existem mais
         for (const [postId, element] of postElementsMap.entries()) {
             if (!postIdsFromFirebase.has(postId)) {
                 element.remove();
@@ -488,7 +489,7 @@ function loadPosts() {
         showMessage(postsContainer, "Erro ao carregar posts.", 'error');
     });
 }
-
+               
 
 // --- Chat Privado ---
 let currentChatRecipientId = null;
