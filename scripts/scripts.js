@@ -274,13 +274,14 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
             showMessage(postMessage, "Você curtiu o post!");
 
             // NOVO: Adicionar notificação de curtida
-            const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId))); // Obtém o post para saber o userId do dono
-            if (!postDoc.empty) {
-                const postOwnerId = postDoc.docs[0].data().userId;
-                const postOwnerUsername = postDoc.docs[0].data().username;
-                if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
-                    addNotification(postOwnerId, user.uid, user.displayName || user.email, 'like', `curtiu seu post: "${postDoc.docs[0].data().content.substring(0, 30)}..."`, postId);
-                }
+             const postDoc = await getDoc(doc(db, "posts", postId)); // Obtém o post para saber o userId do dono// Obtém o post para saber o userId do dono
+            if (postDoc.exists()) {
+              const postData = postDoc.data();
+              const postOwnerId = postData.userId;
+              const postOwnerUsername = postData.username;
+              if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
+                addNotification(postOwnerId, user.uid, user.displayName || user.email, 'like', `curtiu seu post: "${postData.content.substring(0, 30)}..."`, postId);
+               }
             }
         }
     } catch (error) {
