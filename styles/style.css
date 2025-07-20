@@ -4,15 +4,14 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    /* COR DE TESTE - VERMELHO CEREJA BEM FORTE */
-    background-color: #f4f4f4; /* <-- SE VOCÊ VIR ESTA COR, O CSS ESTÁ SENDO LIDO! */
+    /* REVERTENDO PARA A COR ORIGINAL */
+    background-color: #f4f4f4; 
     color: #333;
     
-    /* PROPRIEDADES FLEXBOX PARA CENTRALIZAR O CONTEÚDO PRINCIPAL */
     display: flex;
     flex-direction: column;
-    align-items: center; /* CENTRALIZA HORIZONTALMENTE */
-    justify-content: flex-start; /* ALINHA AO TOPO VERTICALMENTE */
+    align-items: center;
+    justify-content: flex-start;
     min-height: 100vh;
     box-sizing: border-box;
     padding: 20px;
@@ -36,18 +35,18 @@ header h1 {
     padding: 0;
 }
 
-/* --- ESTILO DO MENU DE NAVEGAÇÃO CORRIGIDO --- */
+/* --- Estilo do Menu de Navegação --- */
 nav {
-    /* COR DE TESTE - AZUL ELÉTRICO BEM FORTE */
-    background-color: #0000FF; /* <-- SE VOCÊ VIR ESTA COR, O NAV ESTÁ RECEBENDO ESTILOS! */
+    /* REVERTENDO PARA A COR ORIGINAL */
+    background-color: rgba(255, 255, 255, 0.2); 
     border-radius: 15px;
     padding: 15px 25px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     
     display: flex;
-    flex-direction: row; /* COLOCA OS BOTÕES EM LINHA */
-    flex-wrap: wrap; /* PERMITE QUE OS BOTÕES QUEBREM LINHA */
-    justify-content: center; /* CENTRALIZA OS BOTÕES DENTRO DO NAV */
+    flex-direction: row; /* Botões em linha */
+    flex-wrap: wrap; /* Permite quebrar linha */
+    justify-content: center; /* Centraliza botões */
     gap: 10px;
     
     margin-bottom: 20px;
@@ -113,7 +112,7 @@ main {
     flex-direction: column;
 }
 
-/* NOVO ESTILO PARA O CONTÊINER DE POSTAGENS */
+/* ESTILO PARA O CONTÊINER DE POSTAGENS: Scroll e Novas no Topo */
 #postsContainer {
     max-height: calc(100vh - 250px); /* Altura máxima para a área de rolagem */
     overflow-y: auto; /* Adiciona barra de rolagem vertical */
