@@ -189,24 +189,36 @@ logoutBtn.addEventListener("click", () => {
 });
 
 // Monitorar estado de autenticação
+// ... (código anterior) ...
+
+// Monitorar estado de autenticação
 onAuthStateChanged(auth, (user) => {
     updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        if (!loginFormContainer.classList.contains('active') && !registerFormContainer.classList.contains('active') &&
-            !createPostSection.classList.contains('active') && !chatSection.classList.contains('active') &&
-            !feedSection.classList.contains('active') && !notificationsSection.classList.contains('active')) { // NOVO: Notificações
-                hideAllForms();
-                feedSection.classList.add('active');
-                loadPosts();
+        // Se o usuário está logado, garante que o feed seja exibido
+        // a menos que outra seção já esteja explicitamente ativa (como chat, post, etc.)
+        if (!createPostSection.classList.contains('active') &&
+            !chatSection.classList.contains('active') &&
+            !notificationsSection.classList.contains('active')) { // Verifica se nenhuma outra seção está ativa
+            hideAllForms();
+            feedSection.classList.add('active');
+            loadPosts();
         }
     } else {
         console.log("Nenhum usuário logado.");
-        hideAllForms();
-        loginFormContainer.classList.add('active');
+        // Se não há usuário logado, garante que apenas o formulário de login esteja ativo por padrão.
+        // Isso evita que o feed ou outras seções sejam exibidas por engano.
+        // NÂO chame hideAllForms() aqui se o objetivo é mostrar o login.
+        if (!registerFormContainer.classList.contains('active')) { // Se o cadastro NÃO estiver ativo, mostra o login
+            hideAllForms(); // Esconde tudo
+            loginFormContainer.classList.add('active'); // Mostra o login
+        }
+        // Se o cadastro ESTIVER ativo, ele permanecerá ativo (resolvendo o problema de alternância)
     }
 });
 
+// ... (restante do código) ...
 
 // --- Publicar Post (SOMENTE TEXTO) ---
 publishPostBtn.addEventListener("click", async () => {
