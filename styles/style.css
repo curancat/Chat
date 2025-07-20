@@ -1,18 +1,21 @@
+/* style.css */
+
 body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    /* COR DE TESTE - VERMELHO CEREJA BEM FORTE */
+    background-color: #FF0033; /* <-- SE VOCÊ VIR ESTA COR, O CSS ESTÁ SENDO LIDO! */
     color: #333;
     
-    /* PROPRIEDADES FLEXBOX REFORÇADAS PARA CENTRALIZAR O CONTEÚDO PRINCIPAL */
-    display: flex; /* Ativa o Flexbox para o body */
-    flex-direction: column; /* Empilha os elementos do body (header, nav, main) verticalmente */
-    align-items: center; /* CENTRALIZA horizontalmente os itens filhos do body */
-    justify-content: flex-start; /* Alinha o conteúdo ao topo da viewport */
-    min-height: 100vh; /* Garante que o body ocupe a altura total da tela */
-    box-sizing: border-box; /* Inclui padding e borda no tamanho total */
-    padding: 20px; /* Adiciona um padding geral para não colar nas bordas */
+    /* PROPRIEDADES FLEXBOX PARA CENTRALIZAR O CONTEÚDO PRINCIPAL */
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* CENTRALIZA HORIZONTALMENTE */
+    justify-content: flex-start; /* ALINHA AO TOPO VERTICALMENTE */
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 20px;
 }
 
 header {
@@ -20,40 +23,41 @@ header {
     color: #fff;
     padding: 1rem 0;
     text-align: center;
-    width: 100%; /* Garante que o header ocupe a largura total */
-    max-width: 800px; /* Limita a largura do header para corresponder ao main */
-    margin-bottom: 20px; /* Espaço entre o header e o main/nav */
-    border-radius: 8px; /* Arredondamento para o header */
+    width: 100%;
+    max-width: 800px;
+    margin-bottom: 20px;
+    border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box; /* Para padding e largura funcionarem juntos */
+    box-sizing: border-box;
 }
 
 header h1 {
-    margin: 0 0 10px 0; /* Ajusta a margem do título */
+    margin: 0 0 10px 0;
     padding: 0;
 }
 
 /* --- ESTILO DO MENU DE NAVEGAÇÃO CORRIGIDO --- */
 nav {
-    background-color: rgba(255, 255, 255, 0.2); /* Fundo semi-transparente para nav */
+    /* COR DE TESTE - AZUL ELÉTRICO BEM FORTE */
+    background-color: #0000FF; /* <-- SE VOCÊ VIR ESTA COR, O NAV ESTÁ RECEBENDO ESTILOS! */
     border-radius: 15px;
     padding: 15px 25px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     
-    display: flex; /* ESSENCIAL: Ativa o Flexbox para os botões */
-    flex-direction: row; /* ESSENCIAL: Coloca os botões em linha (lado a lado) */
-    flex-wrap: wrap; /* Permite que os botões quebrem para a próxima linha */
-    justify-content: center; /* Centraliza os botões horizontalmente dentro do nav */
-    gap: 10px; /* Espaço entre os botões */
+    display: flex;
+    flex-direction: row; /* COLOCA OS BOTÕES EM LINHA */
+    flex-wrap: wrap; /* PERMITE QUE OS BOTÕES QUEBREM LINHA */
+    justify-content: center; /* CENTRALIZA OS BOTÕES DENTRO DO NAV */
+    gap: 10px;
     
-    margin-bottom: 20px; /* Espaço abaixo da navegação */
-    max-width: 800px; /* Garante que o nav não seja muito largo e se alinhe */
-    width: 100%; /* Ocupa a largura total disponível dentro do seu container pai */
-    box-sizing: border-box; /* Inclui padding no cálculo da largura */
+    margin-bottom: 20px;
+    max-width: 800px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 nav button {
-    background-color: #5cb85c; /* Cor original dos botões */
+    background-color: #5cb85c;
     color: white;
     padding: 12px 20px;
     border: none;
@@ -63,74 +67,66 @@ nav button {
     font-weight: bold;
     transition: background-color 0.3s ease, transform 0.2s ease;
     
-    flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
-    max-width: 180px; /* Limita o tamanho máximo para não ficarem gigantes */
-    min-width: 120px; /* Garante que os botões não fiquem muito pequenos */
+    flex-grow: 1;
+    max-width: 180px;
+    min-width: 120px;
     text-align: center;
-    box-sizing: border-box; /* Inclui padding no cálculo da largura */
+    box-sizing: border-box;
 }
 
 nav button:hover {
     background-color: #4cae4c;
-    transform: translateY(-2px); /* Efeito sutil ao passar o mouse */
+    transform: translateY(-2px);
 }
 
-/* Regras específicas para o botão de notificação */
 #openNotificationsBtn {
-    position: relative; /* Para posicionar o span da contagem de notificações */
-    padding-right: 35px; /* Espaço extra para o número da notificação */
+    position: relative;
+    padding-right: 35px;
 }
 
 #notificationCount {
     position: absolute;
-    top: 5px; /* Ajuste a posição vertical */
-    right: 5px; /* Ajuste a posição horizontal */
+    top: 5px;
+    right: 5px;
     background-color: red;
     color: white;
     border-radius: 50%;
     padding: 2px 6px;
     font-size: 0.75em;
-    display: none; /* Escondido por padrão se não houver notificações */
-    pointer-events: none; /* Garante que cliques no número passem para o botão */
+    display: none;
+    pointer-events: none;
 }
 
 main {
     padding: 20px;
-    width: 100%; /* Ocupa a largura total disponível */
-    max-width: 800px; /* Limita a largura máxima do conteúdo principal */
-    margin: 0; /* Remove a margem auto superior/inferior, o flexbox do body já centraliza */
+    width: 100%;
+    max-width: 800px;
+    margin: 0;
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    box-sizing: border-box; /* Inclui padding no cálculo da largura */
+    box-sizing: border-box;
     
-    /* NOVO: Flex-grow para o main, permitindo que ele ocupe o espaço restante */
     flex-grow: 1; 
-    /* NOVO: Adicione 'overflow: hidden;' para garantir que o main não cause barras de rolagem desnecessárias */
     overflow: hidden; 
-    /* NOVO: display flex e flex-direction column para organizar seus filhos */
     display: flex;
     flex-direction: column;
 }
 
 /* NOVO ESTILO PARA O CONTÊINER DE POSTAGENS */
 #postsContainer {
-    max-height: calc(100vh - 250px); /* Ajuste este valor. Ex: altura da tela - (altura do cabeçalho + nav + outros paddings/margens) */
-                                     /* Isso cria um "espaço só pra elas" e impede que as postagens empurrem os botões para fora da tela. */
-    overflow-y: auto; /* Adiciona uma barra de rolagem vertical quando o conteúdo excede o max-height */
-    padding-right: 10px; /* Espaço para a barra de rolagem não sobrepor o conteúdo */
+    max-height: calc(100vh - 250px); /* Altura máxima para a área de rolagem */
+    overflow-y: auto; /* Adiciona barra de rolagem vertical */
+    padding-right: 10px; /* Espaço para a barra de rolagem */
     
-    /* Para as novas postagens ficarem em cima e as antigas embaixo */
-    display: flex;
-    flex-direction: column-reverse; /* Isso inverte a ordem dos itens flexíveis */
-    gap: 15px; /* Espaço entre as postagens (post-card) */
+    display: flex; /* ATIVA O FLEXBOX NO CONTAINER DE POSTS */
+    flex-direction: column-reverse; /* COLOCA AS POSTAGENS NOVAS NO TOPO */
+    gap: 15px; /* ESPAÇO ENTRE AS POSTAGENS */
     
-    /* Se você quiser que o scrollbar tenha um estilo mais agradável em navegadores WebKit (Chrome, Safari) */
     scrollbar-width: thin;
     scrollbar-color: #888 #f1f1f1;
 }
 
-/* Estilo para a barra de rolagem em WebKit */
 #postsContainer::-webkit-scrollbar {
     width: 8px;
 }
@@ -155,26 +151,22 @@ main {
     border: 1px solid #ddd;
     border-radius: 5px;
     margin-bottom: 20px;
-    display: none; /* ESSENCIAL: Todos começam escondidos */
+    display: none;
     
-    /* NOVO: flex-shrink para as seções, para não encolherem demais se não forem o postsContainer */
     flex-shrink: 0; 
 }
 
-/* Apenas o feedSection é o container pai direto do postsContainer, então ele pode ser flex */
 #feedSection {
-    display: flex; /* Transforma #feedSection em um flex container */
-    flex-direction: column; /* Organiza seus filhos (h2 e #postsContainer) em coluna */
-    flex-grow: 1; /* Permite que o feedSection cresça para preencher o espaço disponível dentro do main */
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
 }
-
 
 .form-container.active, .section-container.active {
-    display: block; /* ESSENCIAL: A seção ativa se torna visível */
+    display: block;
 }
-/* Reajuste para as seções ativas, para funcionar com o novo display flex do feedSection */
 #feedSection.active {
-    display: flex; /* Garante que o feedSection seja exibido como flex quando ativo */
+    display: flex;
 }
 
 
@@ -193,7 +185,7 @@ select {
     margin-bottom: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    box-sizing: border-box; /* Inclui padding na largura */
+    box-sizing: border-box;
 }
 
 button {
@@ -213,7 +205,7 @@ button:hover {
     margin-top: 10px;
     padding: 10px;
     border-radius: 4px;
-    display: none; /* Mensagens escondidas por padrão */
+    display: none;
 }
 
 .message.success {
@@ -232,7 +224,6 @@ button:hover {
 .post-card {
     border: 1px solid #eee;
     padding: 15px;
-    /* margin-bottom: 15px; REMOVIDO, USAR GAP NO #postsContainer */
     border-radius: 5px;
     background-color: #f9f9f9;
 }
@@ -271,7 +262,7 @@ button:hover {
 }
 
 .like-button.liked {
-    background-color: #dc3545; /* Cor para curtido */
+    background-color: #dc3545;
 }
 
 .like-button:hover, .comment-toggle-button:hover {
@@ -283,7 +274,7 @@ button:hover {
     margin-top: 15px;
     border-top: 1px solid #eee;
     padding-top: 15px;
-    display: none; /* Comments section hidden by default */
+    display: none;
 }
 
 .post-comments h4 {
@@ -293,7 +284,7 @@ button:hover {
 
 .comments-list {
     margin-bottom: 10px;
-    max-height: 200px; /* Scroll para muitos comentários */
+    max-height: 200px;
     overflow-y: auto;
     border: 1px solid #eee;
     padding: 10px;
@@ -401,7 +392,7 @@ button:hover {
 }
 
 .notification-item.unread {
-    background-color: #fff3cd; /* Cor para notificações não lidas */
+    background-color: #fff3cd;
     border-left: 5px solid #ffc107;
 }
 
@@ -419,37 +410,35 @@ button:hover {
 
 
 /* Media query para telas pequenas (ex: celulares) */
-@media (max-width: 768px) { /* Ajuste o breakpoint conforme necessário */
+@media (max-width: 768px) {
     nav {
-        flex-direction: row; /* Mantém a linha para celulares */
-        flex-wrap: wrap; /* Mantém o wrap */
+        flex-direction: row;
+        flex-wrap: wrap;
         justify-content: center;
-        gap: 8px; /* Ajusta o espaçamento para telas menores */
+        gap: 8px;
         padding: 10px 15px;
     }
 
     nav button {
-        flex-grow: 1; /* Permite que os botões cresçam */
-        flex-basis: calc(50% - 4px); /* Tenta fazer 2 botões por linha */
-        max-width: unset; /* Remove o max-width para que possam ocupar mais espaço */
-        min-width: unset; /* Remove o min-width */
+        flex-grow: 1;
+        flex-basis: calc(50% - 4px);
+        max-width: unset;
+        min-width: unset;
         font-size: 0.9em;
         padding: 10px 15px;
     }
 
-    /* Em telas muito pequenas, os botões podem quebrar para 1 por linha se necessário */
     @media (max-width: 480px) {
         nav button {
-            flex-basis: 100%; /* Força 1 botão por linha em telas muito estreitas */
+            flex-basis: 100%;
         }
     }
     
     body, main {
-        padding: 10px; /* Reduz o padding em telas menores */
+        padding: 10px;
     }
-    /* Ajuste para que o postsContainer se ajuste melhor em telas menores */
     #postsContainer {
-        max-height: calc(100vh - 200px); /* Reduz um pouco o valor para acomodar em telas menores */
-        padding-right: 0; /* Remove o padding da barra de rolagem se não for necessário */
+        max-height: calc(100vh - 200px);
+        padding-right: 0;
     }
     }
