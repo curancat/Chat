@@ -2,7 +2,7 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4; /* Mantido o background-color original */
+    background-color: #f4f4f4;
     color: #333;
     
     /* PROPRIEDADES FLEXBOX REFORÇADAS PARA CENTRALIZAR O CONTEÚDO PRINCIPAL */
@@ -103,7 +103,52 @@ main {
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     box-sizing: border-box; /* Inclui padding no cálculo da largura */
+    
+    /* NOVO: Flex-grow para o main, permitindo que ele ocupe o espaço restante */
+    flex-grow: 1; 
+    /* NOVO: Adicione 'overflow: hidden;' para garantir que o main não cause barras de rolagem desnecessárias */
+    overflow: hidden; 
+    /* NOVO: display flex e flex-direction column para organizar seus filhos */
+    display: flex;
+    flex-direction: column;
 }
+
+/* NOVO ESTILO PARA O CONTÊINER DE POSTAGENS */
+#postsContainer {
+    max-height: calc(100vh - 250px); /* Ajuste este valor. Ex: altura da tela - (altura do cabeçalho + nav + outros paddings/margens) */
+                                     /* Isso cria um "espaço só pra elas" e impede que as postagens empurrem os botões para fora da tela. */
+    overflow-y: auto; /* Adiciona uma barra de rolagem vertical quando o conteúdo excede o max-height */
+    padding-right: 10px; /* Espaço para a barra de rolagem não sobrepor o conteúdo */
+    
+    /* Para as novas postagens ficarem em cima e as antigas embaixo */
+    display: flex;
+    flex-direction: column-reverse; /* Isso inverte a ordem dos itens flexíveis */
+    gap: 15px; /* Espaço entre as postagens (post-card) */
+    
+    /* Se você quiser que o scrollbar tenha um estilo mais agradável em navegadores WebKit (Chrome, Safari) */
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+/* Estilo para a barra de rolagem em WebKit */
+#postsContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+#postsContainer::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+#postsContainer::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+#postsContainer::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 
 .form-container, .section-container {
     padding: 20px;
@@ -111,11 +156,27 @@ main {
     border-radius: 5px;
     margin-bottom: 20px;
     display: none; /* ESSENCIAL: Todos começam escondidos */
+    
+    /* NOVO: flex-shrink para as seções, para não encolherem demais se não forem o postsContainer */
+    flex-shrink: 0; 
 }
+
+/* Apenas o feedSection é o container pai direto do postsContainer, então ele pode ser flex */
+#feedSection {
+    display: flex; /* Transforma #feedSection em um flex container */
+    flex-direction: column; /* Organiza seus filhos (h2 e #postsContainer) em coluna */
+    flex-grow: 1; /* Permite que o feedSection cresça para preencher o espaço disponível dentro do main */
+}
+
 
 .form-container.active, .section-container.active {
     display: block; /* ESSENCIAL: A seção ativa se torna visível */
 }
+/* Reajuste para as seções ativas, para funcionar com o novo display flex do feedSection */
+#feedSection.active {
+    display: flex; /* Garante que o feedSection seja exibido como flex quando ativo */
+}
+
 
 h2 {
     color: #333;
@@ -171,7 +232,7 @@ button:hover {
 .post-card {
     border: 1px solid #eee;
     padding: 15px;
-    margin-bottom: 15px;
+    /* margin-bottom: 15px; REMOVIDO, USAR GAP NO #postsContainer */
     border-radius: 5px;
     background-color: #f9f9f9;
 }
@@ -386,4 +447,9 @@ button:hover {
     body, main {
         padding: 10px; /* Reduz o padding em telas menores */
     }
-}
+    /* Ajuste para que o postsContainer se ajuste melhor em telas menores */
+    #postsContainer {
+        max-height: calc(100vh - 200px); /* Reduz um pouco o valor para acomodar em telas menores */
+        padding-right: 0; /* Remove o padding da barra de rolagem se não for necessário */
+    }
+    }
