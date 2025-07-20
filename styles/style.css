@@ -4,9 +4,8 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    /* REVERTENDO PARA A COR ORIGINAL E CORRETA */
-    background-color: #f4f4f4; 
-    color: #333;
+    background-color: #1a202c; /* Azul Escuro Quase Preto */
+    color: #e2e8f0; /* Texto claro */
     
     display: flex;
     flex-direction: column;
@@ -18,15 +17,15 @@ body {
 }
 
 header {
-    background-color: #333;
-    color: #fff;
+    background-color: #2d3748; /* Azul Escuro Médio */
+    color: #e2e8f0; /* Texto claro */
     padding: 1rem 0;
     text-align: center;
     width: 100%;
     max-width: 800px;
     margin-bottom: 20px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.4); /* Sombra mais escura */
     box-sizing: border-box;
 }
 
@@ -37,16 +36,15 @@ header h1 {
 
 /* --- Estilo do Menu de Navegação --- */
 nav {
-    /* REVERTENDO PARA A COR ORIGINAL E CORRETA */
-    background-color: rgba(255, 255, 255, 0.2); 
+    background-color: rgba(45, 55, 72, 0.7); /* Azul Escuro Médio semi-transparente */
     border-radius: 15px;
     padding: 15px 25px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Sombra mais escura */
     
     display: flex;
-    flex-direction: row; /* Botões em linha */
-    flex-wrap: wrap; /* Permite quebrar linha */
-    justify-content: center; /* Centraliza botões */
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 10px;
     
     margin-bottom: 20px;
@@ -56,7 +54,7 @@ nav {
 }
 
 nav button {
-    background-color: #5cb85c;
+    background-color: #6A0DAD; /* Roxo de Destaque */
     color: white;
     padding: 12px 20px;
     border: none;
@@ -74,7 +72,7 @@ nav button {
 }
 
 nav button:hover {
-    background-color: #4cae4c;
+    background-color: #9932CC; /* Roxo Claro */
     transform: translateY(-2px);
 }
 
@@ -87,7 +85,7 @@ nav button:hover {
     position: absolute;
     top: 5px;
     right: 5px;
-    background-color: red;
+    background-color: #dc3545; /* Vermelho para notificações não lidas */
     color: white;
     border-radius: 50%;
     padding: 2px 6px;
@@ -101,9 +99,9 @@ main {
     width: 100%;
     max-width: 800px;
     margin: 0;
-    background-color: #fff;
+    background-color: #2d3748; /* Azul Escuro Médio para o main */
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
     box-sizing: border-box;
     
     flex-grow: 1; 
@@ -114,16 +112,16 @@ main {
 
 /* ESTILO PARA O CONTÊINER DE POSTAGENS: Scroll e Novas no Topo */
 #postsContainer {
-    max-height: calc(100vh - 250px); /* Altura máxima para a área de rolagem */
-    overflow-y: auto; /* Adiciona barra de rolagem vertical */
-    padding-right: 10px; /* Espaço para a barra de rolagem */
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+    padding-right: 10px;
     
-    display: flex; /* ATIVA O FLEXBOX NO CONTAINER DE POSTS */
-    flex-direction: column-reverse; /* COLOCA AS POSTAGENS NOVAS NO TOPO */
-    gap: 15px; /* ESPAÇO ENTRE AS POSTAGENS */
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 15px;
     
     scrollbar-width: thin;
-    scrollbar-color: #888 #f1f1f1;
+    scrollbar-color: #6A0DAD #2d3748; /* Cor da barra de rolagem */
 }
 
 #postsContainer::-webkit-scrollbar {
@@ -131,28 +129,29 @@ main {
 }
 
 #postsContainer::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #2d3748; /* Fundo da barra de rolagem */
     border-radius: 10px;
 }
 
 #postsContainer::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #6A0DAD; /* Cor do "polegar" da barra de rolagem */
     border-radius: 10px;
 }
 
 #postsContainer::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #9932CC;
 }
 
 
 .form-container, .section-container {
     padding: 20px;
-    border: 1px solid #ddd;
+    border: 1px solid #4a5568; /* Borda mais escura */
     border-radius: 5px;
     margin-bottom: 20px;
-    display: none;
+    display: none; /* ESSENCIAL: Todos começam escondidos */
     
     flex-shrink: 0; 
+    background-color: #2d3748; /* Cor de fundo para formulários/seções */
 }
 
 #feedSection {
@@ -162,15 +161,15 @@ main {
 }
 
 .form-container.active, .section-container.active {
-    display: block;
+    display: block; /* Visto por padrão (para formulários) */
 }
 #feedSection.active {
-    display: flex;
+    display: flex; /* O feed deve usar flex para organizar seus filhos */
 }
 
 
 h2 {
-    color: #333;
+    color: #e2e8f0; /* Títulos claros */
     margin-top: 0;
 }
 
@@ -182,13 +181,15 @@ select {
     width: calc(100% - 22px);
     padding: 10px;
     margin-bottom: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid #4a5568; /* Borda mais escura */
     border-radius: 4px;
     box-sizing: border-box;
+    background-color: #1a202c; /* Fundo escuro para inputs */
+    color: #e2e8f0; /* Texto claro para inputs */
 }
 
 button {
-    background-color: #007bff;
+    background-color: #6A0DAD; /* Roxo de Destaque */
     color: white;
     padding: 10px 15px;
     border: none;
@@ -197,7 +198,7 @@ button {
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #9932CC; /* Roxo Claro */
 }
 
 .message {
@@ -205,31 +206,33 @@ button:hover {
     padding: 10px;
     border-radius: 4px;
     display: none;
+    color: #1a202c; /* Texto escuro para mensagens de status */
 }
 
 .message.success {
-    background-color: #d4edda;
+    background-color: #d4edda; /* Verde claro */
     color: #155724;
     border-color: #c3e6cb;
 }
 
 .message.error {
-    background-color: #f8d7da;
+    background-color: #f8d7da; /* Vermelho claro */
     color: #721c24;
     border-color: #f5c6cb;
 }
 
 /* Post Feed */
 .post-card {
-    border: 1px solid #eee;
+    border: 1px solid #4a5568; /* Borda mais escura */
     padding: 15px;
     border-radius: 5px;
-    background-color: #f9f9f9;
+    background-color: #2d3748; /* Azul Escuro Médio para o card */
+    color: #e2e8f0; /* Texto claro */
 }
 
 .post-card h3 {
     margin-top: 0;
-    color: #007bff;
+    color: #9932CC; /* Roxo para títulos de post */
 }
 
 .post-card p {
@@ -238,7 +241,7 @@ button:hover {
 }
 
 .post-card small {
-    color: #777;
+    color: #cbd5e0; /* Cinza claro para datas */
     font-size: 0.85em;
 }
 
@@ -249,7 +252,7 @@ button:hover {
 }
 
 .like-button, .comment-toggle-button {
-    background-color: #6c757d;
+    background-color: #4a5568; /* Cor de fundo para botões de ação do post */
     color: white;
     padding: 8px 12px;
     border: none;
@@ -261,41 +264,44 @@ button:hover {
 }
 
 .like-button.liked {
-    background-color: #dc3545;
+    background-color: #dc3545; /* Vermelho para curtido */
 }
 
 .like-button:hover, .comment-toggle-button:hover {
     opacity: 0.9;
+    background-color: #6A0DAD; /* Roxo de destaque no hover */
 }
 
 /* Comments Section */
 .post-comments {
     margin-top: 15px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid #4a5568; /* Borda mais escura */
     padding-top: 15px;
     display: none;
 }
 
 .post-comments h4 {
     margin-top: 0;
-    color: #555;
+    color: #e2e8f0; /* Títulos claros */
 }
 
 .comments-list {
     margin-bottom: 10px;
     max-height: 200px;
     overflow-y: auto;
-    border: 1px solid #eee;
+    border: 1px solid #4a5568; /* Borda mais escura */
     padding: 10px;
     border-radius: 4px;
+    background-color: #1a202c; /* Fundo escuro para lista de comentários */
 }
 
 .comment {
-    background-color: #e9ecef;
+    background-color: #2d3748; /* Azul escuro médio para comentário */
     padding: 8px 12px;
     margin-bottom: 8px;
     border-radius: 4px;
     word-wrap: break-word;
+    color: #e2e8f0; /* Texto claro */
 }
 
 .comment p {
@@ -305,9 +311,7 @@ button:hover {
 
 .comment small {
     font-size: 0.75em;
-    color: #666;
-    display: block;
-    text-align: right;
+    color: #cbd5e0; /* Cinza claro para datas */
 }
 
 .comment-input-area {
@@ -322,13 +326,13 @@ button:hover {
 
 /* Chat Section */
 #chatMessagesDisplay {
-    border: 1px solid #ddd;
+    border: 1px solid #4a5568;
     height: 300px;
     overflow-y: scroll;
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 4px;
-    background-color: #e9ecef;
+    background-color: #1a202c; /* Fundo escuro para chat */
 }
 
 .message-bubble {
@@ -344,25 +348,26 @@ button:hover {
     font-size: 0.9em;
     display: block;
     margin-bottom: 2px;
+    color: #9932CC; /* Roxo para nome de usuário */
 }
 
 .message-bubble small {
     font-size: 0.7em;
-    color: #666;
+    color: #cbd5e0; /* Cinza claro para timestamp */
     display: block;
     text-align: right;
 }
 
 .message-bubble.sent {
-    background-color: #007bff;
+    background-color: #6A0DAD; /* Roxo para mensagens enviadas */
     color: white;
     margin-left: auto;
     border-bottom-right-radius: 2px;
 }
 
 .message-bubble.received {
-    background-color: #f8f9fa;
-    color: #333;
+    background-color: #4a5568; /* Azul escuro mais claro para mensagens recebidas */
+    color: #e2e8f0; /* Texto claro */
     margin-right: auto;
     border-bottom-left-radius: 2px;
 }
@@ -373,14 +378,14 @@ button:hover {
 
 /* Notifications Section */
 #notificationsList {
-    border: 1px solid #ddd;
+    border: 1px solid #4a5568;
     padding: 10px;
     border-radius: 4px;
-    background-color: #f9f9f9;
+    background-color: #2d3748; /* Fundo para notificações */
 }
 
 .notification-item {
-    background-color: #e9ecef;
+    background-color: #1a202c; /* Fundo para item de notificação */
     padding: 10px;
     margin-bottom: 8px;
     border-radius: 4px;
@@ -389,12 +394,13 @@ button:hover {
 }
 
 .notification-item:hover {
-    background-color: #d1d9e0;
+    background-color: #4a5568; /* Azul escuro mais claro no hover */
 }
 
 .notification-item.unread {
-    background-color: #fff3cd;
-    border-left: 5px solid #ffc107;
+    background-color: #9932CC; /* Roxo claro para notificações não lidas */
+    border-left: 5px solid #6A0DAD; /* Borda roxa de destaque */
+    color: white; /* Texto branco para notificação não lida */
 }
 
 .notification-item p {
@@ -404,7 +410,7 @@ button:hover {
 
 .notification-item small {
     font-size: 0.75em;
-    color: #666;
+    color: #cbd5e0;
     display: block;
     text-align: right;
 }
@@ -442,4 +448,4 @@ button:hover {
         max-height: calc(100vh - 200px);
         padding-right: 0;
     }
-                               }
+}
