@@ -112,13 +112,13 @@ main {
 
 /* ESTILO PARA O CONTÊINER DE POSTAGENS: Scroll e Novas no Topo */
 #postsContainer {
-    max-height: calc(100vh - 250px);
-    overflow-y: auto;
-    padding-right: 10px;
+    max-height: calc(100vh - 250px); /* Altura máxima para a área de rolagem */
+    overflow-y: auto; /* Adiciona barra de rolagem vertical */
+    padding-right: 10px; /* Espaço para a barra de rolagem */
     
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 15px;
+    display: flex; /* ATIVA O FLEXBOX NO CONTAINER DE POSTS */
+    flex-direction: column-reverse; /* COLOCA AS POSTAGENS NOVAS NO TOPO */
+    gap: 15px; /* ESPAÇO ENTRE AS POSTAGENS */
     
     scrollbar-width: thin;
     scrollbar-color: #6A0DAD #2d3748; /* Cor da barra de rolagem */
