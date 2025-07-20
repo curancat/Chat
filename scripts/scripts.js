@@ -362,9 +362,10 @@ function loadComments(postId, commentsListElement) {
         });
     }, (error) => {
         console.error("Erro ao carregar comentários:", error);
-        showMessage(commentsListElement, "Erro ao carregar comentários.", 'error');
+        alert("Erro ao carregar comentários.");
     });
 }
+
 
 
 // --- Carregar Posts (Feed) ---
