@@ -427,12 +427,22 @@ function loadPosts() {
 
             // Eventos de Like
             const likeButton = postElement.querySelector(`.like-button[data-post-id="${postId}"]`);
-            if (likeButton) {
-                likeButton.addEventListener('click', () => {
-                    const currentLikes = parseInt(likeButton.dataset.likesCount);
-                    toggleLike(postId, currentLikes, likedBy, likeButton);
-                });
+if (likeButton) {
+    likeButton.addEventListener('click', async () => {
+        const currentLikes = parseInt(likeButton.dataset.likesCount);
+        try {
+            const postSnap = await getDoc(doc(db, "posts", postId));
+            if (postSnap.exists()) {
+                const postData = postSnap.data();
+                const updatedLikedBy = postData.likedBy || [];
+                toggleLike(postId, currentLikes, updatedLikedBy, likeButton);
             }
+        } catch (error) {
+            console.error("Erro ao buscar o post para curtir/descurtir:", error);
+        }
+    });
+}
+          
 
             // Eventos de Comentário
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
