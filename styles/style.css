@@ -2,13 +2,13 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f4f4f4;
+    background-color: #f4f4f4; /* Mantido o background-color original */
     color: #333;
     
-    /* NOVO: Propriedades Flexbox para o Body para centralizar o conteúdo principal */
-    display: flex;
-    flex-direction: column; /* Empilha os elementos do body (header, main, etc.) verticalmente */
-    align-items: center; /* Centraliza horizontalmente o conteúdo principal */
+    /* PROPRIEDADES FLEXBOX REFORÇADAS PARA CENTRALIZAR O CONTEÚDO PRINCIPAL */
+    display: flex; /* Ativa o Flexbox para o body */
+    flex-direction: column; /* Empilha os elementos do body (header, nav, main) verticalmente */
+    align-items: center; /* CENTRALIZA horizontalmente os itens filhos do body */
     justify-content: flex-start; /* Alinha o conteúdo ao topo da viewport */
     min-height: 100vh; /* Garante que o body ocupe a altura total da tela */
     box-sizing: border-box; /* Inclui padding e borda no tamanho total */
@@ -25,6 +25,7 @@ header {
     margin-bottom: 20px; /* Espaço entre o header e o main/nav */
     border-radius: 8px; /* Arredondamento para o header */
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box; /* Para padding e largura funcionarem juntos */
 }
 
 header h1 {
@@ -32,18 +33,21 @@ header h1 {
     padding: 0;
 }
 
-/* --- Estilo do Menu de Navegação --- */
+/* --- ESTILO DO MENU DE NAVEGAÇÃO CORRIGIDO --- */
 nav {
     background-color: rgba(255, 255, 255, 0.2); /* Fundo semi-transparente para nav */
     border-radius: 15px;
     padding: 15px 25px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-    display: flex; /* Usa flexbox para os botões */
-    flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
-    justify-content: center; /* Centraliza os botões horizontalmente */
+    
+    display: flex; /* ESSENCIAL: Ativa o Flexbox para os botões */
+    flex-direction: row; /* ESSENCIAL: Coloca os botões em linha (lado a lado) */
+    flex-wrap: wrap; /* Permite que os botões quebrem para a próxima linha */
+    justify-content: center; /* Centraliza os botões horizontalmente dentro do nav */
     gap: 10px; /* Espaço entre os botões */
+    
     margin-bottom: 20px; /* Espaço abaixo da navegação */
-    max-width: 800px; /* Garante que o nav não seja muito largo */
+    max-width: 800px; /* Garante que o nav não seja muito largo e se alinhe */
     width: 100%; /* Ocupa a largura total disponível dentro do seu container pai */
     box-sizing: border-box; /* Inclui padding no cálculo da largura */
 }
@@ -58,6 +62,7 @@ nav button {
     font-size: 1em;
     font-weight: bold;
     transition: background-color 0.3s ease, transform 0.2s ease;
+    
     flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
     max-width: 180px; /* Limita o tamanho máximo para não ficarem gigantes */
     min-width: 120px; /* Garante que os botões não fiquem muito pequenos */
@@ -364,9 +369,18 @@ button:hover {
 
     nav button {
         flex-grow: 1; /* Permite que os botões cresçam */
+        flex-basis: calc(50% - 4px); /* Tenta fazer 2 botões por linha */
         max-width: unset; /* Remove o max-width para que possam ocupar mais espaço */
+        min-width: unset; /* Remove o min-width */
         font-size: 0.9em;
         padding: 10px 15px;
+    }
+
+    /* Em telas muito pequenas, os botões podem quebrar para 1 por linha se necessário */
+    @media (max-width: 480px) {
+        nav button {
+            flex-basis: 100%; /* Força 1 botão por linha em telas muito estreitas */
+        }
     }
     
     body, main {
