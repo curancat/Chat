@@ -61,6 +61,7 @@ const feedSection = document.getElementById("feedSection");
 const notificationsSection = document.getElementById("notificationsSection");
 const postsContainer = document.getElementById("postsContainer");
 const notificationsList = document.getElementById("notificationsList");
+const postElementsMap = new Map(); // Guarda os elementos renderizados
 
 // --- Utilitários ---
 
@@ -370,10 +371,11 @@ function loadComments(postId, commentsListElement) {
 
 // --- Carregar Posts (Feed) ---
 function loadPosts() {
-    postsContainer.innerHTML = '';
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+
     onSnapshot(q, (snapshot) => {
-        postsContainer.innerHTML = '';
+        const postIdsFromFirebase = new Set();
+
         snapshot.forEach((doc) => {
             const post = doc.data();
             const postId = doc.id;
@@ -381,6 +383,23 @@ function loadPosts() {
             const likedBy = post.likedBy || [];
             const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
 
+            postIdsFromFirebase.add(postId);
+
+            // Se o post já está no DOM, atualize só os dados relevantes
+            if (postElementsMap.has(postId)) {
+                const existing = postElementsMap.get(postId);
+
+                // Atualiza conteúdo e likes
+                existing.querySelector('p').textContent = post.content;
+                const likeBtn = existing.querySelector('.like-button');
+                likeBtn.innerHTML = `❤️ ${post.likesCount || 0}`;
+                likeBtn.classList.toggle('liked', isLiked);
+                likeBtn.dataset.likesCount = post.likesCount || 0;
+
+                return; // Pula recriação
+            }
+
+            // Criar novo post se não existe
             const postElement = document.createElement('div');
             postElement.classList.add('post-card');
             postElement.innerHTML = `
@@ -402,8 +421,11 @@ function loadPosts() {
                     </div>
                 </div>
             `;
-            postsContainer.appendChild(postElement);
 
+            postsContainer.appendChild(postElement);
+            postElementsMap.set(postId, postElement);
+
+            // Eventos de Like
             const likeButton = postElement.querySelector(`.like-button[data-post-id="${postId}"]`);
             if (likeButton) {
                 likeButton.addEventListener('click', () => {
@@ -412,9 +434,12 @@ function loadPosts() {
                 });
             }
 
+            // Eventos de Comentário
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
             const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
             const commentsListElement = postCommentsSection.querySelector('.comments-list');
+            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
+            const commentInput = postCommentsSection.querySelector('.comment-input');
 
             if (commentToggleButton && postCommentsSection) {
                 commentToggleButton.addEventListener('click', () => {
@@ -426,9 +451,6 @@ function loadPosts() {
                     }
                 });
             }
-
-            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
-            const commentInput = postCommentsSection.querySelector('.comment-input');
 
             if (submitCommentButton && commentInput) {
                 submitCommentButton.addEventListener('click', async () => {
@@ -442,8 +464,16 @@ function loadPosts() {
                 });
             }
         });
+
+        // Remove posts que não estão mais no Firebase
+        for (const [postId, element] of postElementsMap.entries()) {
+            if (!postIdsFromFirebase.has(postId)) {
+                element.remove();
+                postElementsMap.delete(postId);
+            }
+        }
     }, (error) => {
-        console.error("Error fetching posts:", error);
+        console.error("Erro ao carregar posts:", error);
         showMessage(postsContainer, "Erro ao carregar posts.", 'error');
     });
 }
