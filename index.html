@@ -1,73 +1,87 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Good-Vibes</title>
-  <link rel="stylesheet" href="styles/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vlog App</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js"></script>
 </head>
 <body>
-  <h1>Good-Vibes</h1>
-  <nav>
-    <button id="loginBtn">Login</button>
-    <button id="registerBtn">Cadastrar</button>
-    <button id="logoutBtn" style="display: none;">Sair</button>
-    <button id="viewFeedBtn" style="display: none;">Ver Feed</button>
-    <button id="createPostBtn" style="display: none;">Criar Post</button>
-    <button id="openChatBtn" style="display: none;">Chat Privado</button>
-    <button id="openNotificationsBtn" style="display: none;">
-      Notificações <span id="notificationCount" style="display: none; background-color: red; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; margin-left: 5px;">0</span>
-    </button>
-  </nav>
+    <header>
+        <h1>Vlog App</h1>
+        <nav>
+            <button id="loginBtn" style="display: block;">Login</button>
+            <button id="registerBtn" style="display: block;">Cadastro</button>
+            <button id="logoutBtn" style="display: none;">Logout</button>
+            <button id="viewFeedBtn" style="display: none;">Feed</button>
+            <button id="createPostBtn" style="display: none;">Novo Post</button>
+            <button id="openChatBtn" style="display: none;">Chat</button>
+            <button id="openNotificationsBtn" style="display: none;">Notificações (<span id="notificationCount">0</span>)</button>
+            <button id="openProfileBtn" style="display: none;">Meu Perfil</button>
+        </nav>
+    </header>
 
-  <div id="loginFormContainer" class="form-container active">
-    <h2>Login</h2>
-    <input type="email" id="loginEmail" placeholder="Email" required />
-    <input type="password" id="loginPassword" placeholder="Senha" required />
-    <input type="submit" value="Entrar" id="loginSubmit" />
-    <div id="loginMessage" class="message"></div>
-  </div>
+    <main>
+        <section id="loginFormContainer" class="form-container">
+            <h2>Login</h2>
+            <input type="email" id="loginEmail" placeholder="Email">
+            <input type="password" id="loginPassword" placeholder="Senha">
+            <button id="loginSubmit">Entrar</button>
+            <p id="loginMessage" class="message"></p>
+        </section>
 
-  <div id="registerFormContainer" class="form-container">
-    <h2>Cadastrar</h2>
-    <input type="text" id="registerUsername" placeholder="Nome de Usuário" required />
-    <input type="email" id="registerEmail" placeholder="Email" required />
-    <input type="password" id="registerPassword" placeholder="Senha" required />
-    <input type="submit" value="Registrar" id="registerSubmit" />
-    <div id="registerMessage" class="message"></div>
-  </div>
+        <section id="registerFormContainer" class="form-container">
+            <h2>Cadastro</h2>
+            <input type="text" id="registerUsername" placeholder="Nome de Usuário">
+            <input type="email" id="registerEmail" placeholder="Email">
+            <input type="password" id="registerPassword" placeholder="Senha">
+            <button id="registerSubmit">Cadastrar</button>
+            <p id="registerMessage" class="message"></p>
+        </section>
 
-  <div id="createPostSection" class="form-container">
-    <h2>Nova Vibe</h2>
-    <textarea id="postContent" placeholder="Compartilhe sua vibe..." rows="4"></textarea>
-    <input type="submit" value="Publicar Vibe" id="publishPostBtn" />
-    <div id="postMessage" class="message"></div>
-  </div>
+        <section id="createPostSection" class="section-container">
+            <h2>Criar Novo Post</h2>
+            <textarea id="postContent" placeholder="O que você está pensando?"></textarea>
+            <button id="publishPostBtn">Publicar</button>
+            <p id="postMessage" class="message"></p>
+        </section>
 
-  <div id="chatSection" class="form-container">
-    <h2>Chat Privado</h2>
-    <select id="chatRecipientSelect" style="width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ddd;"></select>
-    <div id="chatMessagesDisplay" class="messages-container">
-      </div>
-    <div class="message-input-area">
-      <input type="text" id="chatMessageInput" placeholder="Digite sua mensagem..." />
-      <button id="chatSendMessageBtn">Enviar</button>
-    </div>
-    <div id="chatMessage" class="message"></div>
-  </div>
+        <section id="feedSection" class="section-container active">
+            <h2>Seu Feed</h2>
+            <div id="postsContainer">
+                </div>
+        </section>
 
-  <div id="feedSection" class="form-container">
-    <h2>Feed de Vibes</h2>
-    <div id="postsContainer" class="posts-container">
-      </div>
-  </div>
+        <section id="chatSection" class="section-container">
+            <h2>Chat Privado</h2>
+            <select id="chatRecipientSelect">
+                <option value="">Selecione um usuário</option>
+            </select>
+            <div id="chatMessagesDisplay">
+                </div>
+            <input type="text" id="chatMessageInput" placeholder="Digite sua mensagem...">
+            <button id="chatSendMessageBtn">Enviar</button>
+            <p id="chatMessage" class="message"></p>
+        </section>
 
-  <div id="notificationsSection" class="form-container">
-    <h2>Suas Notificações</h2>
-    <div id="notificationsList" class="posts-container">
-      </div>
-  </div>
+        <section id="notificationsSection" class="section-container">
+            <h2>Notificações</h2>
+            <div id="notificationsList">
+                </div>
+        </section>
 
-  <script src="scripts/scripts.js" type="module"></script>
+        <section id="profileSection" class="section-container">
+            <h2>Meu Perfil</h2>
+            <p><strong>Email:</strong> <span id="profileEmailDisplay"></span></p>
+            <label for="profileUsernameInput">Nome de Usuário:</label>
+            <input type="text" id="profileUsernameInput">
+            <button id="saveProfileBtn">Salvar Alterações</button>
+            <p id="profileMessage" class="message"></p>
+        </section>
+
+    </main>
+
+    <script type="module" src="scripts.js"></script>
 </body>
 </html>
