@@ -4,14 +4,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebas
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
-// REMOVIDO: import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
   authDomain: "vlog-8a75f.firebaseapp.com",
   projectId: "vlog-8a75f",
-  storageBucket: "vlog-8a75f.firebasestorage.app", // Pode manter, mas não será usado para conteúdo do usuário
+  storageBucket: "vlog-8a75f.firebasestorage.app",
   messagingSenderId: "1063952650353",
   appId: "1:1063952650353:web:25f37c51b49daeaf81cbd0",
   measurementId: "G-GRM2E926W3"
@@ -22,7 +21,6 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
-// REMOVIDO: const storage = getStorage(app); // Storage não será mais inicializado para upload de conteúdo do usuário
 
 // --- Elementos DOM ---
 const loginEmail = document.getElementById("loginEmail");
@@ -52,39 +50,51 @@ const registerBtn = document.getElementById("registerBtn");
 const viewFeedBtn = document.getElementById("viewFeedBtn");
 const createPostBtn = document.getElementById("createPostBtn");
 const openChatBtn = document.getElementById("openChatBtn");
-const openNotificationsBtn = document.getElementById("openNotificationsBtn"); // NOVO: Botão Notificações
-const notificationCountSpan = document.getElementById("notificationCount"); // NOVO: Contador Notificações
+const openNotificationsBtn = document.getElementById("openNotificationsBtn");
+const notificationCountSpan = document.getElementById("notificationCount");
 
 const loginFormContainer = document.getElementById("loginFormContainer");
 const registerFormContainer = document.getElementById("registerFormContainer");
 const createPostSection = document.getElementById("createPostSection");
 const chatSection = document.getElementById("chatSection");
 const feedSection = document.getElementById("feedSection");
-const notificationsSection = document.getElementById("notificationsSection"); // NOVO: Seção Notificações
+const notificationsSection = document.getElementById("notificationsSection");
 const postsContainer = document.getElementById("postsContainer");
-const notificationsList = document.getElementById("notificationsList"); // NOVO: Lista Notificações
-
+const notificationsList = document.getElementById("notificationsList");
 
 // --- Utilitários ---
+
+// Todas as seções que podem ser ativadas/desativadas
+const allSections = [
+    loginFormContainer,
+    registerFormContainer,
+    createPostSection,
+    chatSection,
+    feedSection,
+    notificationsSection
+];
+
+// Função para esconder todas as seções
+function hideAllForms() {
+    allSections.forEach(section => {
+        section.classList.remove('active');
+    });
+}
+
+// Função para mostrar uma seção específica
+function showSection(sectionElement) {
+    hideAllForms(); // Esconde tudo primeiro
+    sectionElement.classList.add('active'); // Depois mostra o que foi pedido
+}
+
 function showMessage(element, msg, type = 'success') {
     element.textContent = msg;
     element.style.color = type === 'success' ? 'green' : 'red';
-    if (!element.classList.contains('active')) {
-        element.style.display = 'block';
-    }
+    element.style.display = 'block'; // Garante que a mensagem é visível
     setTimeout(() => {
         element.textContent = '';
         element.style.display = 'none';
     }, 4000);
-}
-
-function hideAllForms() {
-    loginFormContainer.classList.remove('active');
-    registerFormContainer.classList.remove('active');
-    createPostSection.classList.remove('active');
-    chatSection.classList.remove('active');
-    feedSection.classList.remove('active');
-    notificationsSection.classList.remove('active'); // NOVO: Esconde notificações
 }
 
 function updateNavButtons(isLoggedIn) {
@@ -95,8 +105,8 @@ function updateNavButtons(isLoggedIn) {
         viewFeedBtn.style.display = 'block';
         createPostBtn.style.display = 'block';
         openChatBtn.style.display = 'block';
-        openNotificationsBtn.style.display = 'block'; // NOVO: Mostra botão de notificação
-        setupNotificationListener(auth.currentUser.uid); // NOVO: Inicia o listener de notificações
+        openNotificationsBtn.style.display = 'block';
+        setupNotificationListener(auth.currentUser.uid);
     } else {
         loginBtn.style.display = 'block';
         registerBtn.style.display = 'block';
@@ -104,43 +114,37 @@ function updateNavButtons(isLoggedIn) {
         viewFeedBtn.style.display = 'none';
         createPostBtn.style.display = 'none';
         openChatBtn.style.display = 'none';
-        openNotificationsBtn.style.display = 'none'; // NOVO: Esconde botão de notificação
-        notificationCountSpan.textContent = '0'; // NOVO: Zera o contador
+        openNotificationsBtn.style.display = 'none';
+        notificationCountSpan.textContent = '0';
     }
 }
 
+// --- Event Listeners dos Botões de Navegação ---
 loginBtn.addEventListener('click', () => {
-    hideAllForms();
-    loginFormContainer.classList.add('active');
+    showSection(loginFormContainer);
 });
 
 registerBtn.addEventListener('click', () => {
-    hideAllForms();
-    registerFormContainer.classList.add('active');
+    showSection(registerFormContainer);
 });
 
 createPostBtn.addEventListener('click', () => {
-    hideAllForms();
-    createPostSection.classList.add('active');
+    showSection(createPostSection);
 });
 
 openChatBtn.addEventListener('click', () => {
-    hideAllForms();
-    chatSection.classList.add('active');
+    showSection(chatSection);
     loadChatUsers();
 });
 
 viewFeedBtn.addEventListener('click', () => {
-    hideAllForms();
-    feedSection.classList.add('active');
-    loadPosts(); // Garante que posts sejam carregados ao ir para o feed
+    showSection(feedSection);
+    loadPosts();
 });
 
-// NOVO: Event Listener para o botão de Notificações
 openNotificationsBtn.addEventListener('click', () => {
-    hideAllForms();
-    notificationsSection.classList.add('active');
-    loadNotifications(); // Carrega a lista completa de notificações
+    showSection(notificationsSection);
+    loadNotifications();
 });
 
 
@@ -152,8 +156,8 @@ loginSubmit.addEventListener("click", () => {
     signInWithEmailAndPassword(auth, email, password)
         .then(() => {
             showMessage(loginMessage, "Login bem-sucedido!");
-            hideAllForms();
-            feedSection.classList.add('active');
+            showSection(feedSection); // Mostra o feed após o login
+            loadPosts(); // Carrega posts no feed
         })
         .catch(error => showMessage(loginMessage, error.message, 'error'));
 });
@@ -169,8 +173,7 @@ registerSubmit.addEventListener("click", () => {
         })
         .then(() => {
             showMessage(registerMessage, "Cadastro realizado com sucesso!");
-            hideAllForms();
-            loginFormContainer.classList.add('active');
+            showSection(loginFormContainer); // Volta para o login após o cadastro
         })
         .catch(error => showMessage(registerMessage, error.message, 'error'));
 });
@@ -180,8 +183,7 @@ logoutBtn.addEventListener("click", () => {
     signOut(auth)
         .then(() => {
             showMessage(loginMessage, "Logout bem-sucedido!");
-            hideAllForms();
-            loginFormContainer.classList.add('active');
+            showSection(loginFormContainer); // Volta para o login após o logout
         })
         .catch(error => {
             showMessage(loginMessage, error.message, 'error');
@@ -189,43 +191,36 @@ logoutBtn.addEventListener("click", () => {
 });
 
 // Monitorar estado de autenticação
-// ... (código anterior) ...
-
-// Monitorar estado de autenticação
 onAuthStateChanged(auth, (user) => {
     updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        // Se o usuário está logado, garante que o feed seja exibido
-        // a menos que outra seção já esteja explicitamente ativa (como chat, post, etc.)
-        if (!createPostSection.classList.contains('active') &&
-            !chatSection.classList.contains('active') &&
-            !notificationsSection.classList.contains('active')) { // Verifica se nenhuma outra seção está ativa
-            hideAllForms();
-            feedSection.classList.add('active');
+        // Se o usuário está logado, mostra o feed, a menos que uma seção específica
+        // já esteja visível por uma ação do usuário (ex: criar post, chat, notificações)
+        // Isso evita que a página "salte" de volta para o feed se o usuário estava em outra seção.
+        const currentActiveSection = allSections.find(section => section.classList.contains('active'));
+        if (!currentActiveSection || currentActiveSection === loginFormContainer || currentActiveSection === registerFormContainer) {
+            showSection(feedSection);
             loadPosts();
         }
     } else {
         console.log("Nenhum usuário logado.");
-        // Se não há usuário logado, garante que apenas o formulário de login esteja ativo por padrão.
-        // Isso evita que o feed ou outras seções sejam exibidas por engano.
-        // NÂO chame hideAllForms() aqui se o objetivo é mostrar o login.
-        if (!registerFormContainer.classList.contains('active')) { // Se o cadastro NÃO estiver ativo, mostra o login
-            hideAllForms(); // Esconde tudo
-            loginFormContainer.classList.add('active'); // Mostra o login
+        // Se não há usuário logado, garante que apenas o formulário de login esteja ativo.
+        // Isso não interfere se o usuário acabou de clicar em "Cadastrar" e o registerFormContainer está ativo.
+        const currentActiveSection = allSections.find(section => section.classList.contains('active'));
+        if (!currentActiveSection || (currentActiveSection !== registerFormContainer && currentActiveSection !== loginFormContainer)) {
+             showSection(loginFormContainer);
         }
-        // Se o cadastro ESTIVER ativo, ele permanecerá ativo (resolvendo o problema de alternância)
     }
 });
 
-// ... (restante do código) ...
 
 // --- Publicar Post (SOMENTE TEXTO) ---
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value;
     const user = auth.currentUser;
 
-    if (!user || !content.trim()) { // .trim() para garantir que não é apenas espaços em branco
+    if (!user || !content.trim()) {
         showMessage(postMessage, "Preencha o conteúdo do post e esteja logado.", 'error');
         return;
     }
@@ -233,21 +228,19 @@ publishPostBtn.addEventListener("click", async () => {
     const postDocRef = doc(collection(db, "posts"));
 
     try {
-        // Obter o nome de usuário para o post
         const userDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
         let username = user.email;
         userDocSnapshot.forEach((doc) => {
             username = doc.data().username || user.email;
         });
 
-        // Salvar o post no Firestore com campos de curtidas vazios/iniciados
         await setDoc(postDocRef, {
             content: content,
             userId: user.uid,
             username: username,
             timestamp: serverTimestamp(),
-            likesCount: 0, // Contador de curtidas
-            likedBy: []    // Array para armazenar IDs dos usuários que curtiram
+            likesCount: 0,
+            likedBy: []
         });
 
         postContent.value = '';
@@ -259,7 +252,7 @@ publishPostBtn.addEventListener("click", async () => {
 });
 
 // --- Função para Curtir/Descurtir um Post ---
-async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonElement) { // Adicionado likeButtonElement
+async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonElement) {
     const user = auth.currentUser;
     if (!user) {
         showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
@@ -271,46 +264,39 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
 
     try {
         if (likedByUserIds.includes(userId)) {
-            // Usuário já curtiu, então descurtir
             await updateDoc(postRef, {
-                likesCount: increment(-1), // Decrementa o contador
-                likedBy: arrayRemove(userId) // Remove o ID do usuário do array
+                likesCount: increment(-1),
+                likedBy: arrayRemove(userId)
             });
             showMessage(postMessage, "Você descurtiu o post.");
-            // Atualização visual imediata
             if (likeButtonElement) {
                 likeButtonElement.classList.remove('liked');
                 likeButtonElement.innerHTML = `❤️ ${currentLikesCount - 1}`;
                 likeButtonElement.dataset.likesCount = currentLikesCount - 1;
             }
         } else {
-            // Usuário não curtiu, então curtir
             await updateDoc(postRef, {
-                likesCount: increment(1), // Incrementa o contador
-                likedBy: arrayUnion(userId) // Adiciona o ID do usuário ao array
+                likesCount: increment(1),
+                likedBy: arrayUnion(userId)
             });
             showMessage(postMessage, "Você curtiu o post!");
-            // Atualização visual imediata
             if (likeButtonElement) {
                 likeButtonElement.classList.add('liked');
                 likeButtonElement.innerHTML = `❤️ ${currentLikesCount + 1}`;
                 likeButtonElement.dataset.likesCount = currentLikesCount + 1;
             }
 
-            // NOVO: Adicionar notificação de curtida
-            // Corrigido para usar getDoc para obter um documento por ID
             const postDocSnapshot = await getDoc(doc(db, "posts", postId));
-            if (postDocSnapshot.exists()) { // Verifique se o documento existe
-                const postData = postDocSnapshot.data(); // Obtenha os dados do documento
+            if (postDocSnapshot.exists()) {
+                const postData = postDocSnapshot.data();
                 const postOwnerId = postData.userId;
-                // Obtenha o username do remetente da notificação (o usuário que curtiu)
                 const currentUserDoc = await getDoc(doc(db, "users", user.uid));
                 let currentUserUsername = user.email;
                 if (currentUserDoc.exists()) {
                      currentUserUsername = currentUserDoc.data().username || user.email;
                 }
 
-                if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
+                if (postOwnerId !== user.uid) {
                     addNotification(postOwnerId, user.uid, currentUserUsername, 'like', `curtiu seu post: "${postData.content.substring(0, 30)}..."`, postId);
                 }
             }
@@ -323,7 +309,6 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
 
 // --- Funções de Comentário ---
 
-// Função para adicionar um comentário
 async function addComment(postId, commentText) {
     const user = auth.currentUser;
     if (!user || !commentText.trim()) {
@@ -332,7 +317,6 @@ async function addComment(postId, commentText) {
     }
 
     try {
-        // Obter o nome de usuário para o comentário
         const userDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
         let username = user.email;
         userDocSnapshot.forEach((doc) => {
@@ -348,13 +332,11 @@ async function addComment(postId, commentText) {
         });
         showMessage(postMessage, "Comentário adicionado com sucesso!");
 
-        // NOVO: Adicionar notificação de comentário
-        // Corrigido para usar getDoc para obter um documento por ID
-        const postDocSnapshot = await getDoc(doc(db, "posts", postId)); // Use getDoc e doc
-        if (postDocSnapshot.exists()) { // Verifique se o documento existe
-            const postData = postDocSnapshot.data(); // Obtenha os dados do documento
+        const postDocSnapshot = await getDoc(doc(db, "posts", postId));
+        if (postDocSnapshot.exists()) {
+            const postData = postDocSnapshot.data();
             const postOwnerId = postData.userId;
-            if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário comentou no próprio post
+            if (postOwnerId !== user.uid) {
                 addNotification(postOwnerId, user.uid, username, 'comment', `comentou em seu post: "${commentText.substring(0, 30)}..."`, postId);
             }
         }
@@ -365,14 +347,12 @@ async function addComment(postId, commentText) {
     }
 }
 
-// Função para carregar e exibir comentários
 function loadComments(postId, commentsListElement) {
     const commentsCollectionRef = collection(db, "posts", postId, "comments");
     const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
 
-    // Usar onSnapshot para atualizações em tempo real
     onSnapshot(q, (snapshot) => {
-        commentsListElement.innerHTML = ''; // Limpa os comentários existentes
+        commentsListElement.innerHTML = '';
         snapshot.forEach((doc) => {
             const comment = doc.data();
             const commentElement = document.createElement('div');
@@ -398,10 +378,10 @@ function loadPosts() {
         postsContainer.innerHTML = '';
         snapshot.forEach((doc) => {
             const post = doc.data();
-            const postId = doc.id; // Obtenha o ID do post
+            const postId = doc.id;
             const currentUser = auth.currentUser;
-            const likedBy = post.likedBy || []; // Garante que likedBy seja um array
-            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false; // Verifica se o usuário logado curtiu
+            const likedBy = post.likedBy || [];
+            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
 
             const postElement = document.createElement('div');
             postElement.classList.add('post-card');
@@ -426,16 +406,14 @@ function loadPosts() {
             `;
             postsContainer.appendChild(postElement);
 
-            // Adiciona Event Listener para o botão de curtir
             const likeButton = postElement.querySelector(`.like-button[data-post-id="${postId}"]`);
             if (likeButton) {
                 likeButton.addEventListener('click', () => {
-                    const currentLikes = parseInt(likeButton.dataset.likesCount); // Pega o valor atual do atributo
-                    toggleLike(postId, currentLikes, likedBy, likeButton); // Passa o array `likedBy` completo e o elemento do botão
+                    const currentLikes = parseInt(likeButton.dataset.likesCount);
+                    toggleLike(postId, currentLikes, likedBy, likeButton);
                 });
             }
 
-            // Adiciona Event Listener para o botão de COMENTAR (toggle)
             const commentToggleButton = postElement.querySelector(`.comment-toggle-button[data-post-id="${postId}"]`);
             const postCommentsSection = postElement.querySelector(`.post-comments[data-post-id="${postId}"]`);
             const commentsListElement = postCommentsSection.querySelector('.comments-list');
@@ -443,29 +421,14 @@ function loadPosts() {
             if (commentToggleButton && postCommentsSection) {
                 commentToggleButton.addEventListener('click', () => {
                     if (postCommentsSection.style.display === 'none') {
-                        postCommentsSection.style.display = 'block'; // Mostra a seção de comentários
-                        loadComments(postId, commentsListElement); // Carrega os comentários quando a seção é aberta
+                        postCommentsSection.style.display = 'block';
+                        loadComments(postId, commentsListElement);
                     } else {
-                        postCommentsSection.style.display = 'none'; // Esconde a seção de comentários
+                        postCommentsSection.style.display = 'none';
                     }
                 });
             }
 
-            // Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
-            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
-            const commentInput = postCommentsSection.querySelector('.comment-input');
-
-            if (submitCommentButton && commentInput) {commentToggleButton.addEventListener('click', () => {
-                    if (postCommentsSection.style.display === 'none') {
-                        postCommentsSection.style.display = 'block'; // Mostra a seção de comentários
-                        loadComments(postId, commentsListElement); // Carrega os comentários quando a seção é aberta
-                    } else {
-                        postCommentsSection.style.display = 'none'; // Esconde a seção de comentários
-                    }
-                });
-            }
-
-            // Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
             const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
             const commentInput = postCommentsSection.querySelector('.comment-input');
 
@@ -474,7 +437,7 @@ function loadPosts() {
                     const commentText = commentInput.value.trim();
                     if (commentText) {
                         await addComment(postId, commentText);
-                        commentInput.value = ''; // Limpa o input após enviar
+                        commentInput.value = '';
                     } else {
                         showMessage(postMessage, "Por favor, digite um comentário.", 'warning');
                     }
@@ -527,10 +490,6 @@ function listenForChatMessages(user1Id, user2Id) {
 
     const q1 = query(chatCollectionRef,
         where("senderId", "==", user1Id),
-        where("recipientId", "==", user2Id)
-    );
-    const q2 = query(chatCollectionRef,
-        where("senderId", "==", user2Id),
         where("recipientId", "==", user1Id)
     );
 
@@ -555,7 +514,6 @@ function listenForChatMessages(user1Id, user2Id) {
     });
 }
 
-// Display a single chat message
 function displayChatMessage(message) {
     const messageElement = document.createElement('div');
     messageElement.classList.add('message-bubble');
@@ -570,7 +528,6 @@ function displayChatMessage(message) {
     }
 
     let contentHTML = '';
-    // Apenas exibe o texto da mensagem
     if (message.message) {
         contentHTML = `<p>${message.message}</p>`;
     }
@@ -598,15 +555,14 @@ chatSendMessageBtn.addEventListener("click", async () => {
         showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
         return;
     }
-    if (!text) { // Agora exige apenas texto
+    if (!text) {
         showMessage(chatMessageDiv, "Digite uma mensagem.", 'error');
         return;
     }
 
     try {
-        // Obter nome de usuário do remetente
         const senderDocSnapshot = await getDocs(query(collection(db, "users"), where("email", "==", user.email)));
-        let senderUsername = user.email; // Valor padrão
+        let senderUsername = user.email;
         senderDocSnapshot.forEach((doc) => {
             senderUsername = doc.data().username || user.email;
         });
@@ -615,20 +571,18 @@ chatSendMessageBtn.addEventListener("click", async () => {
             senderId: user.uid,
             senderUsername: senderUsername,
             recipientId: recipientId,
-            message: text, // Apenas o texto
-            type: 'text', // O tipo é sempre texto agora
+            message: text,
+            type: 'text',
             timestamp: serverTimestamp()
         });
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
 
-        // NOVO: Adicionar notificação de chat para o destinatário
-        // Precisamos obter o username do destinatário para a mensagem da notificação
-        const recipientUserDoc = await getDocs(query(collection(db, "users"), where("__name__", "==", recipientId)));
-        let recipientUsername = recipientId; // Padrão caso não encontre
-        if (!recipientUserDoc.empty) {
-            recipientUsername = recipientUserDoc.docs[0].data().username || recipientId;
+        const recipientUserDoc = await getDoc(doc(db, "users", recipientId));
+        let recipientUsername = recipientId;
+        if (recipientUserDoc.exists()) {
+            recipientUsername = recipientUserDoc.data().username || recipientId;
         }
         addNotification(recipientId, user.uid, senderUsername, 'chat_message', `enviou uma mensagem: "${text.substring(0, 30)}..."`);
 
@@ -641,29 +595,26 @@ chatSendMessageBtn.addEventListener("click", async () => {
 
 // --- NOVO: Funções de Notificação ---
 
-// Função para adicionar uma notificação ao Firestore
 async function addNotification(recipientId, senderId, senderUsername, type, message, relatedPostId = null) {
     try {
         await addDoc(collection(db, "notifications"), {
             recipientId: recipientId,
             senderId: senderId,
             senderUsername: senderUsername,
-            type: type, // 'like', 'comment', 'chat_message'
-            message: message, // Ex: "curtiu seu post", "comentou em seu post", "enviou uma mensagem"
-            relatedPostId: relatedPostId, // ID do post, se aplicável
+            type: type,
+            message: message,
+            relatedPostId: relatedPostId,
             timestamp: serverTimestamp(),
-            read: false // Por padrão, a notificação é não lida
+            read: false
         });
     } catch (error) {
         console.error("Erro ao adicionar notificação:", error);
     }
 }
 
-// Listener de notificações em tempo real para o contador
-let unsubscribeNotifications = null; // Para guardar a função de desinscrição
+let unsubscribeNotifications = null;
 
 function setupNotificationListener(userId) {
-    // Se já houver um listener ativo, desinscreve primeiro
     if (unsubscribeNotifications) {
         unsubscribeNotifications();
     }
@@ -674,18 +625,17 @@ function setupNotificationListener(userId) {
     );
 
     unsubscribeNotifications = onSnapshot(q, (snapshot) => {
-        notificationCountSpan.textContent = snapshot.size; // Atualiza o contador de não lidas
+        notificationCountSpan.textContent = snapshot.size;
         if (snapshot.size > 0) {
-            notificationCountSpan.style.display = 'inline-block'; // Mostra o contador
+            notificationCountSpan.style.display = 'inline-block';
         } else {
-            notificationCountSpan.style.display = 'none'; // Esconde se não houver notificações
+            notificationCountSpan.style.display = 'none';
         }
     }, (error) => {
         console.error("Erro ao ouvir notificações:", error);
     });
 }
 
-// Carregar e exibir todas as notificações (lidas e não lidas)
 async function loadNotifications() {
     const user = auth.currentUser;
     if (!user) {
@@ -693,7 +643,7 @@ async function loadNotifications() {
         return;
     }
 
-    notificationsList.innerHTML = ''; // Limpa a lista existente
+    notificationsList.innerHTML = '';
 
     const q = query(collection(db, "notifications"),
         where("recipientId", "==", user.uid),
@@ -701,8 +651,8 @@ async function loadNotifications() {
     );
 
     onSnapshot(q, async (snapshot) => {
-        notificationsList.innerHTML = ''; // Limpa novamente para evitar duplicatas em atualizações
-        const unreadNotificationIds = []; // Coleta IDs de não lidas para marcar como lidas
+        notificationsList.innerHTML = '';
+        const unreadNotificationIds = [];
 
         snapshot.forEach((doc) => {
             const notification = doc.data();
@@ -712,12 +662,12 @@ async function loadNotifications() {
             notificationElement.classList.add('notification-item');
             if (!notification.read) {
                 notificationElement.classList.add('unread');
-                unreadNotificationIds.push(notificationId); // Adiciona para marcar como lida
+                unreadNotificationIds.push(notificationId);
             }
 
             let displayMessage = `${notification.senderUsername} ${notification.message}`;
             if (notification.type === 'like' || notification.type === 'comment') {
-                displayMessage += ` (Post ID: ${notification.relatedPostId ? notification.relatedPostId.substring(0, 5) + '...' : 'N/A'})`; // Exibe parte do ID do post
+                displayMessage += ` (Post ID: ${notification.relatedPostId ? notification.relatedPostId.substring(0, 5) + '...' : 'N/A'})`;
             }
 
             notificationElement.innerHTML = `
@@ -726,16 +676,13 @@ async function loadNotifications() {
             `;
             notificationsList.appendChild(notificationElement);
 
-            // Opcional: Marcar como lida ao clicar na notificação (ou em um botão específico)
             notificationElement.addEventListener('click', async () => {
                 if (!notification.read) {
                     await markNotificationAsRead(notificationId);
                 }
-                // Poderíamos adicionar lógica para navegar para o post/chat relacionado aqui
             });
         });
 
-        // Marca todas as notificações exibidas como lidas
         if (unreadNotificationIds.length > 0) {
             for (const id of unreadNotificationIds) {
                 await markNotificationAsRead(id);
@@ -747,7 +694,6 @@ async function loadNotifications() {
     });
 }
 
-// Função para marcar uma notificação como lida
 async function markNotificationAsRead(notificationId) {
     try {
         const notificationRef = doc(db, "notifications", notificationId);
@@ -759,8 +705,11 @@ async function markNotificationAsRead(notificationId) {
     }
 }
 
-// Initial state on load
+// Inicialização: Ao carregar a página, se não houver um usuário logado, mostra o formulário de login.
 document.addEventListener('DOMContentLoaded', () => {
-    // onAuthStateChanged will handle the initial display logic and notification listener setup
+    // onAuthStateChanged já lida com a exibição inicial e o listener de notificação
+    // Apenas garanta que, se ninguém estiver logado, o loginFormContainer seja o padrão
+    if (!auth.currentUser) {
+        showSection(loginFormContainer);
+    }
 });
- 
