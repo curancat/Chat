@@ -88,18 +88,16 @@ const allSections = [
 function hideAllForms() {
     allSections.forEach(section => {
         section.classList.remove('active');
-        // Adiciona um pequeno atraso para display:none após remover a classe active
-        // para permitir transições CSS se você as tiver.
-        // Se não tiver transições, remover essa linha não faz diferença.
-        // section.style.display = 'none'; // Isso é gerenciado pelo CSS .active
+        section.style.display = 'none'; // <- Força esconder mesmo se o CSS falhar
     });
 }
 
+
 // Função para mostrar uma seção específica
 function showSection(sectionElement) {
-    hideAllForms(); // Esconde tudo primeiro
-    sectionElement.classList.add('active'); // Depois mostra o que foi pedido
-    // console.log(`Mostrando seção: ${sectionElement.id}`); // Debugging
+    hideAllForms(); // Esconde tudo
+    sectionElement.classList.add('active');
+    sectionElement.style.display = ''; // Deixa o CSS `.active` controlar
 }
 
 function showMessage(element, msg, type = 'success') {
