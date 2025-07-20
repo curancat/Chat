@@ -4,7 +4,7 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
-    /* REVERTENDO PARA A COR ORIGINAL */
+    /* REVERTENDO PARA A COR ORIGINAL E CORRETA */
     background-color: #f4f4f4; 
     color: #333;
     
@@ -37,7 +37,7 @@ header h1 {
 
 /* --- Estilo do Menu de Navegação --- */
 nav {
-    /* REVERTENDO PARA A COR ORIGINAL */
+    /* REVERTENDO PARA A COR ORIGINAL E CORRETA */
     background-color: rgba(255, 255, 255, 0.2); 
     border-radius: 15px;
     padding: 15px 25px;
@@ -306,6 +306,8 @@ button:hover {
 .comment small {
     font-size: 0.75em;
     color: #666;
+    display: block;
+    text-align: right;
 }
 
 .comment-input-area {
@@ -440,4 +442,4 @@ button:hover {
         max-height: calc(100vh - 200px);
         padding-right: 0;
     }
-    }
+                               }
