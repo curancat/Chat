@@ -713,4 +713,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!auth.currentUser) {
         showSection(loginFormContainer);
     }
-});q
+});
