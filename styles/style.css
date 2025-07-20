@@ -5,7 +5,7 @@ body {
     margin: 0;
     padding: 0;
     /* COR DE TESTE - VERMELHO CEREJA BEM FORTE */
-    background-color: #FF0033; /* <-- SE VOCÊ VIR ESTA COR, O CSS ESTÁ SENDO LIDO! */
+    background-color: #f4f4f4; /* <-- SE VOCÊ VIR ESTA COR, O CSS ESTÁ SENDO LIDO! */
     color: #333;
     
     /* PROPRIEDADES FLEXBOX PARA CENTRALIZAR O CONTEÚDO PRINCIPAL */
