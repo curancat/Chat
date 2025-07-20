@@ -347,25 +347,24 @@ async function addComment(postId, commentText) {
 function loadComments(postId, commentsListElement) {
     const commentsCollectionRef = collection(db, "posts", postId, "comments");
     const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
-
     onSnapshot(q, (snapshot) => {
-        commentsListElement.innerHTML = '';
-        snapshot.forEach((doc) => {
-            const comment = doc.data();
-            const commentElement = document.createElement('div');
-            commentElement.classList.add('comment');
-            commentElement.innerHTML = `
-                <p><strong>${comment.username || comment.userId}:</strong> ${comment.text}</p>
-                <small>${comment.timestamp ? new Date(comment.timestamp.toDate()).toLocaleString() : 'Enviando...'}</small>
-            `;
-            commentsListElement.appendChild(commentElement);
-        });
-    }, (error) => {
-        console.error("Erro ao carregar comentários:", error);
-        alert("Erro ao carregar comentários.");
+    commentsListElement.innerHTML = '';
+    snapshot.forEach((doc) => {
+        const comment = doc.data();
+        const commentElement = document.createElement('div');
+        commentElement.classList.add('comment');
+        commentElement.innerHTML = `
+            <p><strong>${comment.username || comment.userId}:</strong> ${comment.text}</p>
+            <small>${comment.timestamp ? new Date(comment.timestamp.toDate()).toLocaleString() : 'Enviando...'}</small>
+        `;
+        commentsListElement.appendChild(commentElement);
     });
-}
-
+}, (error) => {
+    console.error("Erro ao carregar comentários:", error);
+    alert("Erro ao carregar comentários.");
+});
+  
+    
 
 
 // --- Carregar Posts (Feed) ---
