@@ -3,7 +3,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 // REMOVIDO: import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-storage.js";
 
 // Your web app's Firebase configuration
@@ -247,7 +247,7 @@ publishPostBtn.addEventListener("click", async () => {
 });
 
 // --- Função para Curtir/Descurtir um Post ---
-async function toggleLike(postId, currentLikesCount, likedByUserIds) {
+async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonElement) { // Adicionado likeButtonElement
     const user = auth.currentUser;
     if (!user) {
         showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
@@ -265,6 +265,12 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
                 likedBy: arrayRemove(userId) // Remove o ID do usuário do array
             });
             showMessage(postMessage, "Você descurtiu o post.");
+            // Atualização visual imediata
+            if (likeButtonElement) {
+                likeButtonElement.classList.remove('liked');
+                likeButtonElement.innerHTML = `❤️ ${currentLikesCount - 1}`;
+                likeButtonElement.dataset.likesCount = currentLikesCount - 1;
+            }
         } else {
             // Usuário não curtiu, então curtir
             await updateDoc(postRef, {
@@ -272,16 +278,29 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds) {
                 likedBy: arrayUnion(userId) // Adiciona o ID do usuário ao array
             });
             showMessage(postMessage, "Você curtiu o post!");
+            // Atualização visual imediata
+            if (likeButtonElement) {
+                likeButtonElement.classList.add('liked');
+                likeButtonElement.innerHTML = `❤️ ${currentLikesCount + 1}`;
+                likeButtonElement.dataset.likesCount = currentLikesCount + 1;
+            }
 
             // NOVO: Adicionar notificação de curtida
-             const postDoc = await getDoc(doc(db, "posts", postId)); // Obtém o post para saber o userId do dono// Obtém o post para saber o userId do dono
-            if (postDoc.exists()) {
-              const postData = postDoc.data();
-              const postOwnerId = postData.userId;
-              const postOwnerUsername = postData.username;
-              if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
-                addNotification(postOwnerId, user.uid, user.displayName || user.email, 'like', `curtiu seu post: "${postData.content.substring(0, 30)}..."`, postId);
-               }
+            // Corrigido para usar getDoc para obter um documento por ID
+            const postDocSnapshot = await getDoc(doc(db, "posts", postId));
+            if (postDocSnapshot.exists()) { // Verifique se o documento existe
+                const postData = postDocSnapshot.data(); // Obtenha os dados do documento
+                const postOwnerId = postData.userId;
+                // Obtenha o username do remetente da notificação (o usuário que curtiu)
+                const currentUserDoc = await getDoc(doc(db, "users", user.uid));
+                let currentUserUsername = user.email;
+                if (currentUserDoc.exists()) {
+                     currentUserUsername = currentUserDoc.data().username || user.email;
+                }
+
+                if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário curtiu o próprio post
+                    addNotification(postOwnerId, user.uid, currentUserUsername, 'like', `curtiu seu post: "${postData.content.substring(0, 30)}..."`, postId);
+                }
             }
         }
     } catch (error) {
@@ -318,10 +337,11 @@ async function addComment(postId, commentText) {
         showMessage(postMessage, "Comentário adicionado com sucesso!");
 
         // NOVO: Adicionar notificação de comentário
-        const postDoc = await getDocs(query(collection(db, "posts"), where("__name__", "==", postId))); // Obtém o post para saber o userId do dono
-        if (!postDoc.empty) {
-            const postOwnerId = postDoc.docs[0].data().userId;
-            const postOwnerUsername = postDoc.docs[0].data().username;
+        // Corrigido para usar getDoc para obter um documento por ID
+        const postDocSnapshot = await getDoc(doc(db, "posts", postId)); // Use getDoc e doc
+        if (postDocSnapshot.exists()) { // Verifique se o documento existe
+            const postData = postDocSnapshot.data(); // Obtenha os dados do documento
+            const postOwnerId = postData.userId;
             if (postOwnerId !== user.uid) { // Não notifica se o próprio usuário comentou no próprio post
                 addNotification(postOwnerId, user.uid, username, 'comment', `comentou em seu post: "${commentText.substring(0, 30)}..."`, postId);
             }
@@ -399,7 +419,7 @@ function loadPosts() {
             if (likeButton) {
                 likeButton.addEventListener('click', () => {
                     const currentLikes = parseInt(likeButton.dataset.likesCount); // Pega o valor atual do atributo
-                    toggleLike(postId, currentLikes, likedBy); // Passa o array `likedBy` completo
+                    toggleLike(postId, currentLikes, likedBy, likeButton); // Passa o array `likedBy` completo e o elemento do botão
                 });
             }
 
@@ -410,6 +430,20 @@ function loadPosts() {
 
             if (commentToggleButton && postCommentsSection) {
                 commentToggleButton.addEventListener('click', () => {
+                    if (postCommentsSection.style.display === 'none') {
+                        postCommentsSection.style.display = 'block'; // Mostra a seção de comentários
+                        loadComments(postId, commentsListElement); // Carrega os comentários quando a seção é aberta
+                    } else {
+                        postCommentsSection.style.display = 'none'; // Esconde a seção de comentários
+                    }
+                });
+            }
+
+            // Adiciona Event Listener para o botão de ENVIAR COMENTÁRIO
+            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
+            const commentInput = postCommentsSection.querySelector('.comment-input');
+
+            if (submitCommentButton && commentInput) {commentToggleButton.addEventListener('click', () => {
                     if (postCommentsSection.style.display === 'none') {
                         postCommentsSection.style.display = 'block'; // Mostra a seção de comentários
                         loadComments(postId, commentsListElement); // Carrega os comentários quando a seção é aberta
@@ -717,3 +751,4 @@ async function markNotificationAsRead(notificationId) {
 document.addEventListener('DOMContentLoaded', () => {
     // onAuthStateChanged will handle the initial display logic and notification listener setup
 });
+ 
