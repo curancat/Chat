@@ -195,9 +195,6 @@ onAuthStateChanged(auth, (user) => {
     updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        // Se o usuário está logado, mostra o feed, a menos que uma seção específica
-        // já esteja visível por uma ação do usuário (ex: criar post, chat, notificações)
-        // Isso evita que a página "salte" de volta para o feed se o usuário estava em outra seção.
         const currentActiveSection = allSections.find(section => section.classList.contains('active'));
         if (!currentActiveSection || currentActiveSection === loginFormContainer || currentActiveSection === registerFormContainer) {
             showSection(feedSection);
@@ -205,8 +202,6 @@ onAuthStateChanged(auth, (user) => {
         }
     } else {
         console.log("Nenhum usuário logado.");
-        // Se não há usuário logado, garante que apenas o formulário de login esteja ativo.
-        // Isso não interfere se o usuário acabou de clicar em "Cadastrar" e o registerFormContainer está ativo.
         const currentActiveSection = allSections.find(section => section.classList.contains('active'));
         if (!currentActiveSection || (currentActiveSection !== registerFormContainer && currentActiveSection !== loginFormContainer)) {
              showSection(loginFormContainer);
@@ -286,10 +281,12 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
                 likeButtonElement.dataset.likesCount = currentLikesCount + 1;
             }
 
+            // CORREÇÃO: Obtenção correta do post para notificação
             const postDocSnapshot = await getDoc(doc(db, "posts", postId));
             if (postDocSnapshot.exists()) {
                 const postData = postDocSnapshot.data();
                 const postOwnerId = postData.userId;
+                // Obter o username do remetente da notificação (o usuário que curtiu)
                 const currentUserDoc = await getDoc(doc(db, "users", user.uid));
                 let currentUserUsername = user.email;
                 if (currentUserDoc.exists()) {
@@ -332,6 +329,7 @@ async function addComment(postId, commentText) {
         });
         showMessage(postMessage, "Comentário adicionado com sucesso!");
 
+        // CORREÇÃO: Obtenção correta do post para notificação de comentário
         const postDocSnapshot = await getDoc(doc(db, "posts", postId));
         if (postDocSnapshot.exists()) {
             const postData = postDocSnapshot.data();
@@ -490,6 +488,10 @@ function listenForChatMessages(user1Id, user2Id) {
 
     const q1 = query(chatCollectionRef,
         where("senderId", "==", user1Id),
+        where("recipientId", "==", user2Id)
+    );
+    const q2 = query(chatCollectionRef,
+        where("senderId", "==", user2Id),
         where("recipientId", "==", user1Id)
     );
 
@@ -579,6 +581,7 @@ chatSendMessageBtn.addEventListener("click", async () => {
         showMessage(chatMessageDiv, "Mensagem enviada!");
         chatMessageInput.value = '';
 
+        // CORREÇÃO: Obtenção correta do destinatário para notificação de chat
         const recipientUserDoc = await getDoc(doc(db, "users", recipientId));
         let recipientUsername = recipientId;
         if (recipientUserDoc.exists()) {
@@ -707,9 +710,7 @@ async function markNotificationAsRead(notificationId) {
 
 // Inicialização: Ao carregar a página, se não houver um usuário logado, mostra o formulário de login.
 document.addEventListener('DOMContentLoaded', () => {
-    // onAuthStateChanged já lida com a exibição inicial e o listener de notificação
-    // Apenas garanta que, se ninguém estiver logado, o loginFormContainer seja o padrão
     if (!auth.currentUser) {
         showSection(loginFormContainer);
     }
-});
+});q
