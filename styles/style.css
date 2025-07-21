@@ -450,3 +450,36 @@ button:hover {
         padding-right: 0;
     }
 }
+.link-preview-box {
+    border: 1px solid #4a5568;
+    border-radius: 6px;
+    margin-top: 10px;
+    background-color: #1a202c;
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+}
+
+.link-preview-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.link-preview-texts {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.link-preview-texts strong {
+    color: #e2e8f0;
+    font-size: 0.95em;
+}
+
+.link-preview-texts p {
+    color: #cbd5e0;
+    font-size: 0.85em;
+    margin: 0;
+}
