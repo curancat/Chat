@@ -516,9 +516,11 @@ function loadPosts() {
             postElement.setAttribute('data-post-id', postId);
 
             let imageHtml = '';
+            // FIX: Ensure imageHtml is correctly generated if imageUrl exists
             if (post.imageUrl) {
                 imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
             }
+
             // Add link preview if available
             let linkPreviewHtml = '';
             if (post.linkPreview && post.linkPreview.url) {
@@ -555,6 +557,7 @@ function loadPosts() {
                     </div>
                 </div>
             `;
+
             postsContainer.prepend(postElement); // Add new posts to the top
             postElementsMap.set(postId, postElement);
 
@@ -988,7 +991,8 @@ saveProfileBtn.addEventListener('click', async () => {
     if (!newUsername) {
         showMessage(profileMessage, "O nome de usuário não pode ser vazio.", 'error');
         return;
-    }
+      }
+
     try {
         const userDocRef = doc(db, "users", user.uid);
         await updateDoc(userDocRef, {
@@ -1006,3 +1010,4 @@ document.addEventListener('DOMContentLoaded', () => {
     hideAllForms();
     console.log("DOM totalmente carregado.");
 });
+                         
