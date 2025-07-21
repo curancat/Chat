@@ -70,6 +70,9 @@ const profileUsernameInput = document.getElementById("profileUsernameInput");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const profileMessage = document.getElementById("profileMessage");
 
+const postContent = document.getElementById("postContent");
+const postImageUrl = document.getElementById("postImageUrl"); // NOVO: Obter o campo da URL da imagem
+const postMessage = document.getElementById("postMessage");
 
 // --- Utilitários ---
 
@@ -303,74 +306,51 @@ onAuthStateChanged(auth, (user) => {
 });
 
 
-// --- Publicar Post (SOMENTE TEXTO) ---
+// --- Publicar Post ---
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value.trim();
+    const imageUrl = postImageUrl.value.trim(); // NOVO: Obter a URL da imagem
     const user = auth.currentUser;
 
     if (!user) {
         showMessage(postMessage, "Você precisa estar logado para publicar posts.", 'error');
         return;
     }
-    if (!content) {
-        showMessage(postMessage, "Preencha o conteúdo do post.", 'error');
+    if (!content && !imageUrl) { // Agora permite posts só com imagem ou só com texto
+        showMessage(postMessage, "Preencha o conteúdo do post ou adicione uma imagem.", 'error');
         return;
     }
 
     const postDocRef = doc(collection(db, "posts"));
-
-    // Extrair primeiro link do conteúdo
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    const urls = content.match(urlRegex);
-    let linkPreview = null;
-
-    if (urls && urls.length > 0) {
-        const link = urls[0];
-        try {
-            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(link)}`);
-            const data = await res.json();
-            const doc = new DOMParser().parseFromString(data.contents, "text/html");
-            const title = doc.querySelector("meta[property='og:title']")?.content || doc.title || "";
-            const description = doc.querySelector("meta[property='og:description']")?.content || "";
-            const image = doc.querySelector("meta[property='og:image']")?.content || "";
-
-            linkPreview = {
-                url: link,
-                title,
-                description,
-                image
-            };
-        } catch (error) {
-            console.warn("Erro ao extrair preview do link:", error);
-        }
-    }
 
     try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         let username = user.email;
         if (userDoc.exists()) {
             username = userDoc.data().username || user.email;
+        } else {
+            console.warn("Documento do usuário não encontrado para UID:", user.uid);
+            await setDoc(doc(db, "users", user.uid), { username: user.email, email: user.email }, { merge: true });
         }
 
         await setDoc(postDocRef, {
-            content,
+            content: content,
+            imageUrl: imageUrl || null, // NOVO: Salva a URL da imagem (ou null se vazia)
             userId: user.uid,
-            username,
+            username: username,
             timestamp: serverTimestamp(),
             likesCount: 0,
-            likedBy: [],
-            linkPreview // <-- adiciona ao documento
+            likedBy: []
         });
 
         postContent.value = '';
+        postImageUrl.value = ''; // NOVO: Limpar o campo da URL da imagem
         showMessage(postMessage, "Post publicado com sucesso!");
     } catch (error) {
         showMessage(postMessage, "Erro ao publicar post.", 'error');
         console.error("Erro ao publicar post:", error);
     }
 });
-      
-
 // --- Função para Curtir/Descurtir um Post ---
 async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonElement) {
     const user = auth.currentUser;
