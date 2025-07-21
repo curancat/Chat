@@ -312,44 +312,64 @@ publishPostBtn.addEventListener("click", async () => {
         showMessage(postMessage, "Você precisa estar logado para publicar posts.", 'error');
         return;
     }
-    if (!content) { // Verifica se o conteúdo não está vazio após trim
+    if (!content) {
         showMessage(postMessage, "Preencha o conteúdo do post.", 'error');
         return;
     }
 
-    // Gerar um ID único para o documento do post antes de criar
-    const postDocRef = doc(collection(db, "posts")); // Firebase gera um ID automaticamente aqui
+    const postDocRef = doc(collection(db, "posts"));
+
+    // Extrair primeiro link do conteúdo
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const urls = content.match(urlRegex);
+    let linkPreview = null;
+
+    if (urls && urls.length > 0) {
+        const link = urls[0];
+        try {
+            const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(link)}`);
+            const data = await res.json();
+            const doc = new DOMParser().parseFromString(data.contents, "text/html");
+            const title = doc.querySelector("meta[property='og:title']")?.content || doc.title || "";
+            const description = doc.querySelector("meta[property='og:description']")?.content || "";
+            const image = doc.querySelector("meta[property='og:image']")?.content || "";
+
+            linkPreview = {
+                url: link,
+                title,
+                description,
+                image
+            };
+        } catch (error) {
+            console.warn("Erro ao extrair preview do link:", error);
+        }
+    }
 
     try {
-        // Obter o username do usuário logado do Firestore (usando UID diretamente para garantir)
         const userDoc = await getDoc(doc(db, "users", user.uid));
-        let username = user.email; // Fallback para email se username não for encontrado
+        let username = user.email;
         if (userDoc.exists()) {
             username = userDoc.data().username || user.email;
-        } else {
-            console.warn("Documento do usuário não encontrado para UID:", user.uid);
-            // Poderíamos criar um documento básico aqui se ele não existe por algum motivo
-            await setDoc(doc(db, "users", user.uid), { username: user.email, email: user.email }, { merge: true });
         }
 
-
         await setDoc(postDocRef, {
-            content: content,
+            content,
             userId: user.uid,
-            username: username,
+            username,
             timestamp: serverTimestamp(),
             likesCount: 0,
-            likedBy: []
+            likedBy: [],
+            linkPreview // <-- adiciona ao documento
         });
 
         postContent.value = '';
         showMessage(postMessage, "Post publicado com sucesso!");
-        // O feed será atualizado automaticamente pelo onSnapshot em loadPosts
     } catch (error) {
         showMessage(postMessage, "Erro ao publicar post.", 'error');
         console.error("Erro ao publicar post:", error);
     }
 });
+      
 
 // --- Função para Curtir/Descurtir um Post ---
 async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonElement) {
@@ -559,6 +579,21 @@ function loadPosts() {
                     </div>
                 </div>
             `;
+
+             if (post.linkPreview && post.linkPreview.url) {
+    const previewDiv = document.createElement('div');
+    previewDiv.classList.add('link-preview-box');
+    previewDiv.innerHTML = `
+        ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
+        <div class="link-preview-texts">
+            <strong>${post.linkPreview.title || 'Link'}</strong>
+            <p>${post.linkPreview.description || ''}</p>
+            <a href="${post.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${post.linkPreview.url}</a>
+        </div>
+    `;
+    postElement.appendChild(previewDiv);
+             }
+          
 
             postsContainer.prepend(postElement); // Adiciona posts novos no topo
             postElementsMap.set(postId, postElement);
