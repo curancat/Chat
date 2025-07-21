@@ -116,7 +116,6 @@ main {
     overflow-y: auto; /* Adiciona barra de rolagem vertical */
     padding-right: 10px; /* Espaço para a barra de rolagem */
     
-    display: flex; /* ATIVA O FLEXBOX NO CONTAINER DE POSTS */
     display: flex;
     flex-direction: column; /* ✅ Ordem natural */
     gap: 15px;
@@ -482,4 +481,4 @@ button:hover {
     color: #cbd5e0;
     font-size: 0.85em;
     margin: 0;
-}
+    }
