@@ -64,16 +64,12 @@ const notificationsList = document.getElementById("notificationsList");
 
 // NOVO: Elementos DOM do Perfil
 const openProfileBtn = document.getElementById("openProfileBtn");
+const postImageUrl = document.getElementById("postImageUrl");
 const profileSection = document.getElementById("profileSection");
 const profileEmailDisplay = document.getElementById("profileEmailDisplay");
 const profileUsernameInput = document.getElementById("profileUsernameInput");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const profileMessage = document.getElementById("profileMessage");
-
-const postContent = document.getElementById("postContent");
-const postImageUrl = document.getElementById("postImageUrl"); // NOVO: Obter o campo da URL da imagem
-const postMessage = document.getElementById("postMessage");
-
 // --- Utilitários ---
 
 // Todas as seções que podem ser ativadas/desativadas
