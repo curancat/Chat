@@ -482,3 +482,29 @@ button:hover {
     font-size: 0.85em;
     margin: 0;
     }
+
+/* style.css */
+
+/* ... (seus estilos existentes, incluindo os novos para .post-card e .link-preview-box) ... */
+
+/* Estilos para a imagem do post */
+.post-image-preview {
+    max-width: 100%; /* Garante que a imagem não transborde o contêiner */
+    height: auto; /* Mantém a proporção da imagem */
+    display: block; /* Remove o espaço extra abaixo da imagem */
+    margin: 15px auto; /* Centraliza a imagem e adiciona margem superior/inferior */
+    border-radius: 8px; /* Bordas arredondadas */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* Sombra para destaque */
+    object-fit: contain; /* Ajusta a imagem dentro da caixa sem cortar */
+    max-height: 400px; /* Limita a altura máxima para evitar imagens muito grandes */
+    border: 1px solid #4a5568; /* Borda sutil */
+}
+
+/* Opcional: Se a imagem e o link preview puderem coexistir, você pode ajustar as margens */
+/* Por exemplo, se quiser mais espaço entre a imagem e o link preview */
+.post-image-preview + .link-preview-box {
+    margin-top: 20px; /* Mais espaço se um link preview seguir uma imagem */
+}
+
+
+/* ... (resto do seu style.css) ... */
