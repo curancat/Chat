@@ -1,11 +1,9 @@
 // --- Configuração do Firebase ---
-// Importa as funções específicas do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js"; // Adicionado updateEmail, updatePassword
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
   authDomain: "vlog-8a75f.firebaseapp.com",
@@ -16,9 +14,8 @@ const firebaseConfig = {
   measurementId: "G-GRM2E926W3"
 };
 
-// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app); // Note: analytics might require additional setup/consent for full functionality
+const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -36,11 +33,12 @@ const registerMessage = document.getElementById("registerMessage");
 
 const publishPostBtn = document.getElementById("publishPostBtn");
 const postContent = document.getElementById("postContent");
+const postImageUrl = document.getElementById("postImageUrl"); // Moved up for clarity
 const postMessage = document.getElementById("postMessage");
 
 const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
 const chatMessageInput = document.getElementById("chatMessageInput");
-const chatMessageDiv = document.getElementById("chatMessage"); // Este é um p de mensagem, não o display de chat
+const chatMessageDiv = document.getElementById("chatMessage");
 const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
 const chatRecipientSelect = document.getElementById("chatRecipientSelect");
 
@@ -62,17 +60,15 @@ const notificationsSection = document.getElementById("notificationsSection");
 const postsContainer = document.getElementById("postsContainer");
 const notificationsList = document.getElementById("notificationsList");
 
-// NOVO: Elementos DOM do Perfil
 const openProfileBtn = document.getElementById("openProfileBtn");
-const postImageUrl = document.getElementById("postImageUrl");
 const profileSection = document.getElementById("profileSection");
 const profileEmailDisplay = document.getElementById("profileEmailDisplay");
 const profileUsernameInput = document.getElementById("profileUsernameInput");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const profileMessage = document.getElementById("profileMessage");
+
 // --- Utilitários ---
 
-// Todas as seções que podem ser ativadas/desativadas
 const allSections = [
     loginFormContainer,
     registerFormContainer,
@@ -80,117 +76,112 @@ const allSections = [
     chatSection,
     feedSection,
     notificationsSection,
-    profileSection // Adicionado a nova seção de perfil
+    profileSection
 ];
 
-// Função para esconder todas as seções
 function hideAllForms() {
     allSections.forEach(section => {
         section.classList.remove('active');
-        section.style.display = 'none'; // <- Força esconder mesmo se o CSS falhar
+        section.style.display = 'none'; // Ensure it's hidden
     });
 }
 
-
-// Função para mostrar uma seção específica
 function showSection(sectionElement) {
-    hideAllForms(); // Esconde tudo
+    hideAllForms();
     sectionElement.classList.add('active');
-    sectionElement.style.display = ''; // Deixa o CSS `.active` controlar
+    sectionElement.style.display = ''; // Let CSS control display for 'active'
+    // Special handling for feedSection to use flex if needed
+    if (sectionElement.id === 'feedSection') {
+        sectionElement.style.display = 'flex';
+    }
 }
 
 function showMessage(element, msg, type = 'success') {
     element.textContent = msg;
-    element.classList.remove('success', 'error'); // Limpa classes anteriores
-    element.classList.add(type); // Adiciona a nova classe de tipo
-    element.style.display = 'block'; // Garante que a mensagem é visível
+    element.classList.remove('success', 'error');
+    element.classList.add(type);
+    element.style.display = 'block';
     setTimeout(() => {
         element.textContent = '';
         element.style.display = 'none';
-        element.classList.remove('success', 'error'); // Remove as classes ao esconder
+        element.classList.remove('success', 'error');
     }, 4000);
 }
 
 function updateNavButtons(isLoggedIn) {
+    loginBtn.style.display = isLoggedIn ? 'none' : 'block';
+    registerBtn.style.display = isLoggedIn ? 'none' : 'block';
+    logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
+    viewFeedBtn.style.display = isLoggedIn ? 'block' : 'none';
+    createPostBtn.style.display = isLoggedIn ? 'block' : 'none';
+    openChatBtn.style.display = isLoggedIn ? 'block' : 'none';
+    openNotificationsBtn.style.display = isLoggedIn ? 'block' : 'none';
+    openProfileBtn.style.display = isLoggedIn ? 'block' : 'none';
+
     if (isLoggedIn) {
-        loginBtn.style.display = 'none';
-        registerBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
-        viewFeedBtn.style.display = 'block';
-        createPostBtn.style.display = 'block';
-        openChatBtn.style.display = 'block';
-        openNotificationsBtn.style.display = 'block';
-        openProfileBtn.style.display = 'block'; // NOVO: Mostra o botão de perfil
-        setupNotificationListener(auth.currentUser.uid); // Garante que o listener de notificação é ativado
+        setupNotificationListener(auth.currentUser.uid);
     } else {
-        loginBtn.style.display = 'block';
-        registerBtn.style.display = 'block';
-        logoutBtn.style.display = 'none';
-        viewFeedBtn.style.display = 'none';
-        createPostBtn.style.display = 'none';
-        openChatBtn.style.display = 'none';
-        openNotificationsBtn.style.display = 'none';
-        openProfileBtn.style.display = 'none'; // NOVO: Esconde o botão de perfil
         notificationCountSpan.textContent = '0';
-        if (unsubscribeNotifications) { // Desativa o listener de notificações ao deslogar
+        if (unsubscribeNotifications) {
             unsubscribeNotifications();
             unsubscribeNotifications = null;
         }
+        // If no user is logged in, ensure only login/register are visible.
+        // This is handled by onAuthStateChanged redirecting to loginFormContainer.
     }
 }
 
 // --- Event Listeners dos Botões de Navegação ---
 loginBtn.addEventListener('click', () => {
-    hideAllForms(); // Garante que tudo esteja escondido antes de mostrar o login
     showSection(loginFormContainer);
-    loginMessage.textContent = ''; // Limpa mensagens anteriores
+    loginMessage.textContent = '';
     loginMessage.style.display = 'none';
 });
 
 registerBtn.addEventListener('click', () => {
-    hideAllForms(); // Garante que tudo esteja escondido antes de mostrar o cadastro
     showSection(registerFormContainer);
-    registerMessage.textContent = ''; // Limpa mensagens anteriores
+    registerMessage.textContent = '';
     registerMessage.style.display = 'none';
 });
 
 createPostBtn.addEventListener('click', () => {
     showSection(createPostSection);
-    postContent.value = ''; // Limpa o campo de texto
-    postMessage.textContent = ''; // Limpa mensagens anteriores
+    postContent.value = '';
+    postImageUrl.value = ''; // Clear image URL field
+    postMessage.textContent = '';
     postMessage.style.display = 'none';
 });
 
 openChatBtn.addEventListener('click', () => {
     showSection(chatSection);
     loadChatUsers();
-    chatMessageInput.value = ''; // Limpa o campo de mensagem
-    chatMessageDiv.textContent = ''; // Limpa mensagens anteriores do chat
+    chatMessageInput.value = '';
+    chatMessageDiv.textContent = '';
     chatMessageDiv.style.display = 'none';
 });
 
 viewFeedBtn.addEventListener('click', () => {
     showSection(feedSection);
-    loadPosts(); // Garante que os posts são recarregados/atualizados
+    // loadPosts() is already real-time via onSnapshot,
+    // so just showing the section is enough.
 });
 
 openNotificationsBtn.addEventListener('click', () => {
     showSection(notificationsSection);
-    loadNotifications(); // Garante que as notificações são carregadas/atualizadas
+    loadNotifications();
 });
 
-// NOVO: Listener para abrir o perfil
 openProfileBtn.addEventListener('click', () => {
     showSection(profileSection);
-    loadUserProfile(); // Carrega os dados do perfil ao abrir
-    profileMessage.textContent = ''; // Limpa mensagens anteriores
+    loadUserProfile();
+    profileMessage.textContent = '';
     profileMessage.style.display = 'none';
 });
 
 // --- Autenticação ---
-loginSubmit.addEventListener("click", async () => { // Adicionado async
-    const email = loginEmail.value.trim(); // Trim para remover espaços
-    const password = loginPassword.value.trim(); // Trim para remover espaços
+loginSubmit.addEventListener("click", async () => {
+    const email = loginEmail.value.trim();
+    const password = loginPassword.value.trim();
 
     if (!email || !password) {
         showMessage(loginMessage, "Por favor, insira email e senha.", 'error');
@@ -200,10 +191,7 @@ loginSubmit.addEventListener("click", async () => { // Adicionado async
     try {
         await signInWithEmailAndPassword(auth, email, password);
         showMessage(loginMessage, "Login bem-sucedido!");
-        // A lógica de showSection e loadPosts já está no onAuthStateChanged,
-        // que será disparado após o sucesso do login.
-        // showSection(feedSection);
-        // loadPosts();
+        // onAuthStateChanged will handle showing feed and loading posts
     } catch (error) {
         let errorMessage = "Erro de login.";
         if (error.code === 'auth/invalid-email') {
@@ -220,7 +208,7 @@ loginSubmit.addEventListener("click", async () => { // Adicionado async
     }
 });
 
-registerSubmit.addEventListener("click", async () => { // Adicionado async
+registerSubmit.addEventListener("click", async () => {
     const email = registerEmail.value.trim();
     const password = registerPassword.value.trim();
     const username = registerUsername.value.trim();
@@ -236,17 +224,16 @@ registerSubmit.addEventListener("click", async () => { // Adicionado async
 
     try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        // Garante que o username é salvo no documento do usuário
         await setDoc(doc(db, "users", cred.user.uid), {
             username: username,
             email: email,
-            createdAt: serverTimestamp() // Adiciona um timestamp de criação
+            createdAt: serverTimestamp()
         });
         showMessage(registerMessage, "Cadastro realizado com sucesso!");
         registerUsername.value = '';
         registerEmail.value = '';
         registerPassword.value = '';
-        showSection(loginFormContainer); // Volta para o login após o cadastro
+        showSection(loginFormContainer); // Redirect to login after successful registration
     } catch (error) {
         let errorMessage = "Erro no cadastro.";
         if (error.code === 'auth/email-already-in-use') {
@@ -263,13 +250,11 @@ registerSubmit.addEventListener("click", async () => { // Adicionado async
     }
 });
 
-// Logout
-logoutBtn.addEventListener("click", async () => { // Adicionado async
+logoutBtn.addEventListener("click", async () => {
     try {
         await signOut(auth);
         showMessage(loginMessage, "Logout bem-sucedido!");
-        showSection(loginFormContainer); // Volta para o login após o logout
-        // Limpar dados ou estado do usuário, se necessário
+        // onAuthStateChanged will handle showing login and cleaning up
     } catch (error) {
         showMessage(loginMessage, error.message, 'error');
         console.error("Erro de logout:", error);
@@ -278,22 +263,19 @@ logoutBtn.addEventListener("click", async () => { // Adicionado async
 
 // Monitorar estado de autenticação
 onAuthStateChanged(auth, (user) => {
-    updateNavButtons(!!user); // Atualiza os botões de navegação
+    updateNavButtons(!!user);
     if (user) {
         console.log("Usuário logado:", user.email, user.uid);
-        // Se o usuário está logado, e a seção atual é login/registro, ou nenhuma,
-        // redireciona para o feed.
+        // Only show feed if not already on feed, or if it's login/register section
         const currentActiveSection = allSections.find(section => section.classList.contains('active'));
         if (!currentActiveSection || currentActiveSection === loginFormContainer || currentActiveSection === registerFormContainer) {
             showSection(feedSection);
-            loadPosts();
         }
-        // Ativa o listener de notificação apenas uma vez após o login
+        loadPosts(); // Always load posts when user is logged in
         setupNotificationListener(user.uid);
     } else {
         console.log("Nenhum usuário logado.");
-        // Se não há usuário logado, garante que a seção de login esteja visível.
-        // Apenas redireciona se a seção atual NÃO for login ou registro.
+        // If no user, show login form unless registration is already active.
         const currentActiveSection = allSections.find(section => section.classList.contains('active'));
         if (!currentActiveSection || (currentActiveSection !== registerFormContainer && currentActiveSection !== loginFormContainer)) {
              showSection(loginFormContainer);
@@ -301,23 +283,20 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-
 // --- Publicar Post ---
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value.trim();
-    const imageUrl = postImageUrl.value.trim(); // NOVO: Obter a URL da imagem
+    const imageUrl = postImageUrl.value.trim();
     const user = auth.currentUser;
 
     if (!user) {
         showMessage(postMessage, "Você precisa estar logado para publicar posts.", 'error');
         return;
     }
-    if (!content && !imageUrl) { // Agora permite posts só com imagem ou só com texto
+    if (!content && !imageUrl) {
         showMessage(postMessage, "Preencha o conteúdo do post ou adicione uma imagem.", 'error');
         return;
     }
-
-    const postDocRef = doc(collection(db, "posts"));
 
     try {
         const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -329,9 +308,9 @@ publishPostBtn.addEventListener("click", async () => {
             await setDoc(doc(db, "users", user.uid), { username: user.email, email: user.email }, { merge: true });
         }
 
-        await setDoc(postDocRef, {
+        await addDoc(collection(db, "posts"), { // Changed to addDoc for auto-ID
             content: content,
-            imageUrl: imageUrl || null, // NOVO: Salva a URL da imagem (ou null se vazia)
+            imageUrl: imageUrl || null,
             userId: user.uid,
             username: username,
             timestamp: serverTimestamp(),
@@ -340,15 +319,17 @@ publishPostBtn.addEventListener("click", async () => {
         });
 
         postContent.value = '';
-        postImageUrl.value = ''; // NOVO: Limpar o campo da URL da imagem
+        postImageUrl.value = '';
         showMessage(postMessage, "Post publicado com sucesso!");
+        showSection(feedSection); // Go back to feed after publishing
     } catch (error) {
         showMessage(postMessage, "Erro ao publicar post.", 'error');
         console.error("Erro ao publicar post:", error);
     }
 });
+
 // --- Função para Curtir/Descurtir um Post ---
-async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonElement) {
+async function toggleLike(postId, likeButtonElement) {
     const user = auth.currentUser;
     if (!user) {
         showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
@@ -359,7 +340,6 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
     const userId = user.uid;
 
     try {
-        // Recarrega o post para ter a versão mais recente dos likedBy
         const postDocSnap = await getDoc(postRef);
         if (!postDocSnap.exists()) {
             console.error("Post não encontrado para curtir/descurtir:", postId);
@@ -369,7 +349,7 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
         const postData = postDocSnap.data();
         const latestLikedBy = postData.likedBy || [];
         const isCurrentlyLiked = latestLikedBy.includes(userId);
-        const currentLikes = postData.likesCount || 0; // Usa a contagem real do banco de dados
+        const currentLikes = postData.likesCount || 0;
 
         if (isCurrentlyLiked) {
             await updateDoc(postRef, {
@@ -377,26 +357,13 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
                 likedBy: arrayRemove(userId)
             });
             showMessage(postMessage, "Você descurtiu o post.");
-            // Atualiza o botão imediatamente
-            if (likeButtonElement) {
-                likeButtonElement.classList.remove('liked');
-                likeButtonElement.innerHTML = `❤️ ${currentLikes - 1}`;
-                likeButtonElement.dataset.likesCount = currentLikes - 1;
-            }
         } else {
             await updateDoc(postRef, {
                 likesCount: increment(1),
                 likedBy: arrayUnion(userId)
             });
             showMessage(postMessage, "Você curtiu o post!");
-            // Atualiza o botão imediatamente
-            if (likeButtonElement) {
-                likeButtonElement.classList.add('liked');
-                likeButtonElement.innerHTML = `❤️ ${currentLikes + 1}`;
-                likeButtonElement.dataset.likesCount = currentLikes + 1;
-            }
 
-            // Obtenção correta do post para notificação (já presente, mas confirmada)
             const postOwnerId = postData.userId;
             const currentUserDoc = await getDoc(doc(db, "users", user.uid));
             let currentUserUsername = user.email;
@@ -404,10 +371,11 @@ async function toggleLike(postId, currentLikesCount, likedByUserIds, likeButtonE
                  currentUserUsername = currentUserDoc.data().username || user.email;
             }
 
-            if (postOwnerId !== user.uid) { // Não notificar se o usuário curtir o próprio post
+            if (postOwnerId !== user.uid) {
                 addNotification(postOwnerId, user.uid, currentUserUsername, 'like', `curtiu seu post: "${postData.content.substring(0, 30)}..."`, postId);
             }
         }
+        // The onSnapshot in loadPosts will automatically update the UI
     } catch (error) {
         console.error("Erro ao curtir/descurtir o post:", error);
         showMessage(postMessage, "Erro ao processar sua curtida.", 'error');
@@ -428,7 +396,7 @@ async function addComment(postId, commentText) {
     }
 
     try {
-        const userDocSnapshot = await getDoc(doc(db, "users", user.uid)); // Usar getDoc com UID
+        const userDocSnapshot = await getDoc(doc(db, "users", user.uid));
         let username = user.email;
         if (userDocSnapshot.exists()) {
             username = userDocSnapshot.data().username || user.email;
@@ -443,31 +411,29 @@ async function addComment(postId, commentText) {
             text: commentText,
             timestamp: serverTimestamp()
         });
-        showMessage(postMessage, "Comentário adicionado com sucesso!");
+        // No need to show message here, as onSnapshot will update comments list
+        // showMessage(postMessage, "Comentário adicionado com sucesso!");
 
-        // CORREÇÃO: Obtenção correta do post para notificação de comentário
         const postDocSnapshot = await getDoc(doc(db, "posts", postId));
         if (postDocSnapshot.exists()) {
             const postData = postDocSnapshot.data();
             const postOwnerId = postData.userId;
-            if (postOwnerId !== user.uid) { // Não notificar se o usuário comentar no próprio post
+            if (postOwnerId !== user.uid) {
                 addNotification(postOwnerId, user.uid, username, 'comment', `comentou em seu post: "${commentText.substring(0, 30)}..."`, postId);
             }
         }
     } catch (error) {
-        console.error("Erro ao adicionarcomentário:", error);
+        console.error("Erro ao adicionar comentário:", error);
         showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
     }
 }
 
-// Corrigido para ser uma função que retorna o listener, não o listener em si
 function setupCommentsListener(postId, commentsListElement) {
     const commentsCollectionRef = collection(db, "posts", postId, "comments");
     const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
-    
-    // Retorna a função de unsubscribe para poder limpá-la se necessário
+
     return onSnapshot(q, (snapshot) => {
-        commentsListElement.innerHTML = ''; // Limpa a lista antes de adicionar
+        commentsListElement.innerHTML = '';
         snapshot.forEach((doc) => {
             const comment = doc.data();
             const commentElement = document.createElement('div');
@@ -478,7 +444,6 @@ function setupCommentsListener(postId, commentsListElement) {
             `;
             commentsListElement.appendChild(commentElement);
         });
-        // Rola para o final para mostrar o comentário mais recente
         commentsListElement.scrollTop = commentsListElement.scrollHeight;
     }, (error) => {
         console.error("Erro ao carregar comentários:", error);
@@ -486,57 +451,75 @@ function setupCommentsListener(postId, commentsListElement) {
     });
 }
 
-
 // --- Carregar Posts (Feed) ---
-
-const postElementsMap = new Map(); // mantém referência dos posts renderizados
-const commentsUnsubscribeMap = new Map(); // Para gerenciar listeners de comentários
+const postElementsMap = new Map();
+const commentsUnsubscribeMap = new Map();
 
 function loadPosts() {
     const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
 
+    // Use onSnapshot here to get real-time updates and initial load
     onSnapshot(q, (snapshot) => {
         const postIdsFromFirebase = new Set();
+        const currentUser = auth.currentUser; // Get current user once
 
         snapshot.forEach((docSnap) => {
             const post = docSnap.data();
             const postId = docSnap.id;
-            const currentUser = auth.currentUser;
-            const likedBy = post.likedBy || [];
-            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
-
             postIdsFromFirebase.add(postId);
 
-            // Se já existe, atualiza os dados (sem recriar o elemento)
+            const isLiked = currentUser ? (post.likedBy || []).includes(currentUser.uid) : false;
+
+            // If post already exists in DOM, just update its dynamic parts
             if (postElementsMap.has(postId)) {
-                const existing = postElementsMap.get(postId);
-                // Atualiza apenas o conteúdo e timestamp se mudaram para evitar flicker
-                if (existing.querySelector('p').textContent !== post.content) {
-                    existing.querySelector('p').textContent = post.content;
+                const existingPostElement = postElementsMap.get(postId);
+                const likeBtn = existingPostElement.querySelector('.like-button');
+                const newLikesCount = post.likesCount || 0;
+
+                // Update text content and image if they change
+                const contentP = existingPostElement.querySelector('p');
+                if (contentP && contentP.textContent !== post.content) {
+                    contentP.textContent = post.content;
                 }
-                const existingSmall = existing.querySelector('small');
-                const newTimestampText = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...';
-                if (existingSmall.textContent !== newTimestampText) {
-                    existingSmall.textContent = newTimestampText;
+                const imagePreview = existingPostElement.querySelector('.post-image-preview');
+                if (post.imageUrl && (!imagePreview || imagePreview.src !== post.imageUrl)) {
+                    if (imagePreview) {
+                        imagePreview.src = post.imageUrl;
+                    } else { // Create image if it's new
+                         const imgElement = document.createElement('img');
+                         imgElement.src = post.imageUrl;
+                         imgElement.alt = "Post Image";
+                         imgElement.classList.add('post-image-preview');
+                         contentP.after(imgElement); // Insert after content
+                    }
+                } else if (!post.imageUrl && imagePreview) {
+                    imagePreview.remove(); // Remove image if URL is cleared
                 }
 
-                const likeBtn = existing.querySelector('.like-button');
-                const newLikesCount = post.likesCount || 0;
-                // Atualiza o botão de like apenas se a contagem ou o status mudou
+
                 if (parseInt(likeBtn.dataset.likesCount) !== newLikesCount || likeBtn.classList.contains('liked') !== isLiked) {
                     likeBtn.innerHTML = `❤️ ${newLikesCount}`;
                     likeBtn.classList.toggle('liked', isLiked);
                     likeBtn.dataset.likesCount = newLikesCount;
                 }
-                // O return deve estar aqui, após as atualizações, para não recriar o elemento.
-                return;
+                // Update timestamp
+                const smallElement = existingPostElement.querySelector('small');
+                if (smallElement) {
+                    smallElement.textContent = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...';
+                }
+                return; // Skip creating a new element
             }
 
-            // Criar novo post se não existir
+            // Create new post element
             const postElement = document.createElement('div');
             postElement.classList.add('post-card');
-            postElement.setAttribute('data-post-id', postId); // Adiciona data-attribute para fácil referência
+            postElement.setAttribute('data-post-id', postId);
 
+            let imageHtml = '';
+            if (post.imageUrl) {
+                imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
+            }
+            // Add link preview if available
             let linkPreviewHtml = '';
             if (post.linkPreview && post.linkPreview.url) {
                 linkPreviewHtml = `
@@ -549,11 +532,6 @@ function loadPosts() {
                         </div>
                     </div>
                 `;
-            }
-
-            let imageHtml = '';
-            if (post.imageUrl) {
-                imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
             }
 
             postElement.innerHTML = `
@@ -577,82 +555,15 @@ function loadPosts() {
                     </div>
                 </div>
             `;
-
-            postsContainer.prepend(postElement); // Adiciona posts novos no topo
+            postsContainer.prepend(postElement); // Add new posts to the top
             postElementsMap.set(postId, postElement);
 
-            // Adiciona listeners para os botões de like e comentário
+            // Add event listeners for new elements
             const likeButton = postElement.querySelector('.like-button');
-            likeButton.addEventListener('click', () => toggleLike(postId, likeButton));
-
-            const commentToggleButton = postElement.querySelector('.comment-toggle-button');
-            const postCommentsSection = postElement.querySelector('.post-comments');
-            const commentsList = postCommentsSection.querySelector('.comments-list');
-            const commentInput = postCommentsSection.querySelector('.comment-input');
-            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
-
-            commentToggleButton.addEventListener('click', () => {
-                const isHidden = postCommentsSection.style.display === 'none';
-                postCommentsSection.style.display = isHidden ? 'block' : 'none';
-                if (isHidden) {
-                    loadComments(postId, commentsList);
-                }
-            });
-
-            submitCommentButton.addEventListener('click', () => {
-                addComment(postId, commentInput.value);
-                commentInput.value = ''; // Limpa o input após enviar
-            });
-        });
-
-        // Remove posts que não existem mais no Firebase
-        const currentPostIds = Array.from(postElementsMap.keys());
-        currentPostIds.forEach(postId => {
-            if (!postIdsFromFirebase.has(postId)) {
-                const elementToRemove = postElementsMap.get(postId);
-                if (elementToRemove) {
-                    elementToRemove.remove();
-                    postElementsMap.delete(postId);
-                }
-            }
-        });
-    });
-}
-
-// As funções toggleLike, loadComments, addComment, loadUsers, subscribeToNotifications,
-// toggleChatSection, sendMessage, loadMessages, createChat, toggleNotificationSection
-// e setupChatListeners devem estar definidas em outras partes do seu script.
-// Elas não estão incluídas aqui para focar na função loadPosts.
-
-
- // 🎯 BOTÃO DE LIKE FUNCIONAL (Refatorado para usar o elemento do post)
-  const likeButton = postElement.querySelector('.like-button'); // Já tem o data-post-id
-  if (likeButton) {
-                likeButton.addEventListener('click', async () => {
-                    const currentLikes = parseInt(likeButton.dataset.likesCount);
-                    const postIdFromBtn = likeButton.dataset.postId;
-                    const user = auth.currentUser;
-                    if (!user) {
-                        showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
-                        return;
-                    }
-
-                    // Obter o estado mais recente de 'likedBy' diretamente do Firestore
-                    try {
-                        const postSnap = await getDoc(doc(db, "posts", postIdFromBtn));
-                        if (postSnap.exists()) {
-                            const postData = postSnap.data();
-                            const updatedLikedBy = postData.likedBy || [];
-                            toggleLike(postIdFromBtn, currentLikes, updatedLikedBy, likeButton);
-                        }
-                    } catch (error) {
-                        console.error("Erro ao buscar post para curtir/descurtir:", error);
-                        showMessage(postMessage, "Erro ao curtir/descurtir o post.", 'error');
-                    }
-                });
+            if (likeButton) {
+                likeButton.addEventListener('click', () => toggleLike(postId, likeButton));
             }
 
-            // BOTÕES DE COMENTÁRIO
             const commentToggleButton = postElement.querySelector('.comment-toggle-button');
             const postCommentsSection = postElement.querySelector('.post-comments');
             const commentsListElement = postCommentsSection.querySelector('.comments-list');
@@ -663,14 +574,12 @@ function loadPosts() {
                 commentToggleButton.addEventListener('click', () => {
                     if (postCommentsSection.style.display === 'none') {
                         postCommentsSection.style.display = 'block';
-                        // Adiciona o listener de comentários e guarda a função de unsubscribe
                         const unsubscribe = setupCommentsListener(postId, commentsListElement);
                         commentsUnsubscribeMap.set(postId, unsubscribe);
                     } else {
                         postCommentsSection.style.display = 'none';
-                        // Remove o listener de comentários quando a seção é fechada
                         if (commentsUnsubscribeMap.has(postId)) {
-                            commentsUnsubscribeMap.get(postId)(); // Chama a função de unsubscribe
+                            commentsUnsubscribeMap.get(postId)();
                             commentsUnsubscribeMap.delete(postId);
                         }
                     }
@@ -682,20 +591,19 @@ function loadPosts() {
                     const commentText = commentInput.value.trim();
                     if (commentText) {
                         await addComment(postId, commentText);
-                        commentInput.value = ''; // Limpa o input após enviar
+                        commentInput.value = '';
                     } else {
-                        showMessage(postMessage, "Por favor, digite um comentário.", 'error'); // Mudado para 'error' para mais destaque
+                        showMessage(postMessage, "Por favor, digite um comentário.", 'error');
                     }
                 });
             }
         });
 
-        // Remove posts que não existem mais no Firebase
+        // Remove posts that no longer exist in Firebase
         for (const [postId, element] of postElementsMap.entries()) {
             if (!postIdsFromFirebase.has(postId)) {
                 element.remove();
                 postElementsMap.delete(postId);
-                // Limpa o listener de comentários se o post for removido
                 if (commentsUnsubscribeMap.has(postId)) {
                     commentsUnsubscribeMap.get(postId)();
                     commentsUnsubscribeMap.delete(postId);
@@ -710,22 +618,22 @@ function loadPosts() {
 
 
 // --- Chat Privado ---
-let currentChatRecipientId = null; // Reinicializado para garantir que não persiste indevidamente
-let unsubscribeChat = null; // Para gerenciar o listener do chat
+let currentChatRecipientId = null;
+let unsubscribeChat = null;
 
 async function loadChatUsers() {
     chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>';
     const currentUser = auth.currentUser;
-    if (!currentUser) return; // Não carrega usuários se não estiver logado
+    if (!currentUser) return;
 
     const usersRef = collection(db, "users");
-    const q = query(usersRef, orderBy("username")); // Ordena por username
+    const q = query(usersRef, orderBy("username"));
     try {
         const querySnapshot = await getDocs(q);
 
         querySnapshot.forEach((doc) => {
             const userData = doc.data();
-            if (doc.id !== currentUser.uid) { // Não lista o próprio usuário
+            if (doc.id !== currentUser.uid) {
                 const option = document.createElement('option');
                 option.value = doc.id;
                 option.textContent = userData.username || userData.email;
@@ -733,14 +641,13 @@ async function loadChatUsers() {
             }
         });
 
-        // Só adiciona o listener uma vez ao select de recipients
         if (!chatRecipientSelect.dataset.listenerAdded) {
             chatRecipientSelect.addEventListener('change', (event) => {
                 const newRecipientId = event.target.value;
                 if (newRecipientId && newRecipientId !== currentChatRecipientId) {
                     currentChatRecipientId = newRecipientId;
-                    chatMessagesDisplay.innerHTML = ''; // Limpa mensagens antigas
-                    if (unsubscribeChat) { // Limpa o listener anterior se houver
+                    chatMessagesDisplay.innerHTML = '';
+                    if (unsubscribeChat) {
                         unsubscribeChat();
                     }
                     listenForChatMessages(currentUser.uid, currentChatRecipientId);
@@ -752,14 +659,13 @@ async function loadChatUsers() {
                     }
                 }
             });
-            chatRecipientSelect.dataset.listenerAdded = true; // Marca que o listener foi adicionado
+            chatRecipientSelect.dataset.listenerAdded = true;
         }
 
-        // Se já havia um recipient selecionado, recarrega o chat
         if (currentChatRecipientId && chatRecipientSelect.querySelector(`option[value="${currentChatRecipientId}"]`)) {
             chatRecipientSelect.value = currentChatRecipientId;
-            // listenForChatMessages já é chamado no change event, mas pode ser redundante aqui.
-            // O importante é garantir que, se um chat estava aberto, ele continue aberto.
+            // The change event listener should handle loading messages if recipient is already selected
+            // No need to explicitly call listenForChatMessages here unless it's for initial load and recipient is pre-selected
         }
 
     } catch (error) {
@@ -769,51 +675,76 @@ async function loadChatUsers() {
 }
 
 function listenForChatMessages(user1Id, user2Id) {
-    if (unsubscribeChat) { // Limpa qualquer listener anterior
+    if (unsubscribeChat) {
         unsubscribeChat();
     }
 
     const chatCollectionRef = collection(db, "privateChats");
 
-    // Consulta para mensagens enviadas por user1 para user2
     const q1 = query(chatCollectionRef,
         where("senderId", "==", user1Id),
         where("recipientId", "==", user2Id)
     );
-    // Consulta para mensagens enviadas por user2 para user1
     const q2 = query(chatCollectionRef,
         where("senderId", "==", user2Id),
         where("recipientId", "==", user1Id)
     );
 
-    // Combina os listeners para ambos os lados da conversa
-    unsubscribeChat = onSnapshot(q1, (snapshot1) => {
-        onSnapshot(q2, (snapshot2) => {
-            const allMessages = [];
-            snapshot1.forEach(doc => allMessages.push(doc.data()));
-            snapshot2.forEach(doc => allMessages.push(doc.data()));
+    // Using Promise.all with two onSnapshot listeners to merge and sort messages
+    let unsubscribe1 = null;
+    let unsubscribe2 = null;
 
-            // Ordena todas as mensagens por timestamp
-            allMessages.sort((a, b) => {
-                const timestampA = a.timestamp?.toDate() || new Date(0);
-                const timestampB = b.timestamp?.toDate() || new Date(0);
-                return timestampA.getTime() - timestampB.getTime(); // Use getTime() para comparação numérica
-            });
+    // Use a flag to ensure messages are displayed only after both listeners have fired at least once initially
+    let q1InitialLoad = false;
+    let q2InitialLoad = false;
 
-            chatMessagesDisplay.innerHTML = ''; // Limpa o display para recarregar
-            allMessages.forEach(message => {
-                displayChatMessage(message);
-            });
-            chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight; // Rola para o final
-        }, (error) => {
-            console.error("Erro ao ouvir mensagens do chat (q2):", error);
-            showMessage(chatMessageDiv, "Erro ao carregar mensagens.", 'error');
+    function renderAllMessages() {
+        if (!q1InitialLoad || !q2InitialLoad) return; // Wait for both initial loads
+
+        const allMessages = [];
+        const snapshot1Docs = unsubscribe1.snapshot?.docs || [];
+        const snapshot2Docs = unsubscribe2.snapshot?.docs || [];
+
+        snapshot1Docs.forEach(doc => allMessages.push(doc.data()));
+        snapshot2Docs.forEach(doc => allMessages.push(doc.data()));
+
+        allMessages.sort((a, b) => {
+            const timestampA = a.timestamp?.toDate() || new Date(0);
+            const timestampB = b.timestamp?.toDate() || new Date(0);
+            return timestampA.getTime() - timestampB.getTime();
         });
+
+        chatMessagesDisplay.innerHTML = '';
+        allMessages.forEach(message => {
+            displayChatMessage(message);
+        });
+        chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
+    }
+
+    unsubscribe1 = onSnapshot(q1, (snapshot) => {
+        unsubscribe1.snapshot = snapshot; // Store snapshot for combined rendering
+        q1InitialLoad = true;
+        renderAllMessages();
     }, (error) => {
         console.error("Erro ao ouvir mensagens do chat (q1):", error);
         showMessage(chatMessageDiv, "Erro ao carregar mensagens.", 'error');
     });
+
+    unsubscribe2 = onSnapshot(q2, (snapshot) => {
+        unsubscribe2.snapshot = snapshot; // Store snapshot for combined rendering
+        q2InitialLoad = true;
+        renderAllMessages();
+    }, (error) => {
+        console.error("Erro ao ouvir mensagens do chat (q2):", error);
+        showMessage(chatMessageDiv, "Erro ao carregar mensagens.", 'error');
+    });
+
+    unsubscribeChat = () => { // Combined unsubscribe function
+        if (unsubscribe1) unsubscribe1();
+        if (unsubscribe2) unsubscribe2();
+    };
 }
+
 
 function displayChatMessage(message) {
     const messageElement = document.createElement('div');
@@ -823,13 +754,12 @@ function displayChatMessage(message) {
     let senderName = message.senderUsername || "Desconhecido";
     if (currentUser && message.senderId === currentUser.uid) {
         messageElement.classList.add('sent');
-        senderName = "Você"; // Para o usuário ver "Você" nas suas mensagens
+        senderName = "Você";
     } else {
         messageElement.classList.add('received');
     }
 
-    // Garante que o timestamp seja um Date object para formatação
-    const messageTimestamp = message.timestamp?.toDate ? message.timestamp.toDate() : new Date(); // Fallback
+    const messageTimestamp = message.timestamp?.toDate ? message.timestamp.toDate() : new Date();
 
     messageElement.innerHTML = `
         <strong>${senderName}</strong>
@@ -839,8 +769,6 @@ function displayChatMessage(message) {
     chatMessagesDisplay.appendChild(messageElement);
 }
 
-
-// --- Enviar mensagem no chat (SOMENTE TEXTO) ---
 chatSendMessageBtn.addEventListener("click", async () => {
     const text = chatMessageInput.value.trim();
     const user = auth.currentUser;
@@ -860,7 +788,6 @@ chatSendMessageBtn.addEventListener("click", async () => {
     }
 
     try {
-        // Obter o username do remetente
         const senderDocSnapshot = await getDoc(doc(db, "users", user.uid));
         let senderUsername = user.email;
         if (senderDocSnapshot.exists()) {
@@ -869,8 +796,6 @@ chatSendMessageBtn.addEventListener("click", async () => {
             console.warn("Documento do remetente não encontrado para UID:", user.uid, "Usando email.");
         }
 
-        // Usar addDoc para privateChats, para Firebase gerar ID automaticamente.
-        // setDoc com Date.now() pode levar a IDs duplicados se duas mensagens forem enviadas no mesmo ms.
         await addDoc(collection(db, "privateChats"), {
             senderId: user.uid,
             senderUsername: senderUsername,
@@ -881,16 +806,14 @@ chatSendMessageBtn.addEventListener("click", async () => {
         });
 
         showMessage(chatMessageDiv, "Mensagem enviada!");
-        chatMessageInput.value = ''; // Limpa o input após enviar
+        chatMessageInput.value = '';
 
-        // Obtenção correta do destinatário para notificação de chat
         const recipientUserDoc = await getDoc(doc(db, "users", recipientId));
-        let recipientUsername = recipientId; // Fallback
+        let recipientUsername = recipientId;
         if (recipientUserDoc.exists()) {
             recipientUsername = recipientUserDoc.data().username || recipientId;
         }
 
-        // Envia notificação apenas se o destinatário não for o próprio remetente
         if (recipientId !== user.uid) {
             addNotification(recipientId, user.uid, senderUsername, 'chat_message', `enviou uma mensagem: "${text.substring(0, 30)}..."`);
         }
@@ -902,9 +825,7 @@ chatSendMessageBtn.addEventListener("click", async () => {
 });
 
 // --- NOVO: Funções de Notificação ---
-
 async function addNotification(recipientId, senderId, senderUsername, type, message, relatedPostId = null) {
-    // Não adicionar notificação se o remetente e o destinatário forem a mesma pessoa
     if (recipientId === senderId) {
         return;
     }
@@ -924,14 +845,14 @@ async function addNotification(recipientId, senderId, senderUsername, type, mess
     }
 }
 
-let unsubscribeNotifications = null; // Variável para armazenar a função de unsubscribe
+let unsubscribeNotifications = null;
 
 function setupNotificationListener(userId) {
-    if (!userId) { // Garante que há um userId para configurar o listener
+    if (!userId) {
         console.warn("setupNotificationListener chamado sem userId.");
         return;
     }
-    if (unsubscribeNotifications) { // Limpa o listener anterior se já existir um
+    if (unsubscribeNotifications) {
         unsubscribeNotifications();
         console.log("Listener de notificações anterior desativado.");
     }
@@ -962,16 +883,15 @@ async function loadNotifications() {
         return;
     }
 
-    notificationsList.innerHTML = ''; // Limpa a lista antes de carregar novas
+    notificationsList.innerHTML = '';
 
     const q = query(collection(db, "notifications"),
         where("recipientId", "==", user.uid),
         orderBy("timestamp", "desc")
     );
 
-    // Usa onSnapshot para atualizações em tempo real
     onSnapshot(q, async (snapshot) => {
-        notificationsList.innerHTML = ''; // Limpa a lista a cada atualização
+        notificationsList.innerHTML = '';
         const notificationsToMarkAsRead = [];
 
         snapshot.forEach((doc) => {
@@ -982,7 +902,7 @@ async function loadNotifications() {
             notificationElement.classList.add('notification-item');
             if (!notification.read) {
                 notificationElement.classList.add('unread');
-                notificationsToMarkAsRead.push(notificationId); // Adiciona para marcar como lida
+                // notificationsToMarkAsRead.push(notificationId); // Moved to click listener or a "Mark all read" button
             }
 
             let displayMessage = `${notification.senderUsername || 'Usuário Desconhecido'} ${notification.message}`;
@@ -996,22 +916,19 @@ async function loadNotifications() {
             `;
             notificationsList.appendChild(notificationElement);
 
-            // Adiciona listener para marcar como lida ao clicar individualmente
             notificationElement.addEventListener('click', async () => {
                 if (!notification.read) {
                     await markNotificationAsRead(notificationId);
-                    // A UI será atualizada automaticamente pelo onSnapshot
                 }
             });
         });
 
-        // Marca todas as notificações não lidas como lidas após carregá-las
-        // Isso pode ser ajustado se você preferir que o usuário as marque manualmente
-        if (notificationsToMarkAsRead.length > 0) {
-            for (const id of notificationsToMarkAsRead) {
-                await markNotificationAsRead(id);
-            }
-        }
+        // Consider adding a "Mark All as Read" button instead of doing it automatically on load
+        // if (notificationsToMarkAsRead.length > 0) {
+        //     for (const id of notificationsToMarkAsRead) {
+        //         await markNotificationAsRead(id);
+        //     }
+        // }
     }, (error) => {
         console.error("Erro ao carregar notificações:", error);
         showMessage(notificationsSection, "Erro ao carregar notificações.", 'error');
@@ -1031,9 +948,7 @@ async function markNotificationAsRead(notificationId) {
     }
 }
 
-
 // --- NOVO: Funções de Perfil do Usuário ---
-
 async function loadUserProfile() {
     const user = auth.currentUser;
     if (!user) {
@@ -1051,9 +966,8 @@ async function loadUserProfile() {
             profileUsernameInput.value = userData.username || '';
         } else {
             profileEmailDisplay.textContent = user.email;
-            profileUsernameInput.value = ''; // Campo vazio se não houver username no Firestore
+            profileUsernameInput.value = '';
             console.warn("Documento do usuário não encontrado no Firestore para perfil.");
-            // Poderíamos criar um documento básico aqui se ele não existe
             await setDoc(doc(db, "users", user.uid), { email: user.email }, { merge: true });
         }
     } catch (error) {
@@ -1070,14 +984,11 @@ saveProfileBtn.addEventListener('click', async () => {
     }
 
     const newUsername = profileUsernameInput.value.trim();
-    // Não alteramos o email ou senha aqui, apenas o username no Firestore.
-    // Alterar email/senha via Firebase Auth exige re-autenticação.
 
     if (!newUsername) {
         showMessage(profileMessage, "O nome de usuário não pode ser vazio.", 'error');
         return;
     }
-
     try {
         const userDocRef = doc(db, "users", user.uid);
         await updateDoc(userDocRef, {
@@ -1090,18 +1001,8 @@ saveProfileBtn.addEventListener('click', async () => {
     }
 });
 
-
-// Inicialização: Ao carregar a página, se não houver um usuário logado, mostra o formulário de login.
+// Initialization: Hide all forms and let onAuthStateChanged handle the initial display
 document.addEventListener('DOMContentLoaded', () => {
-    // Garante que todos os formulários estejam escondidos no início
     hideAllForms();
-
-    // O onAuthStateChanged já lida com qual seção mostrar inicialmente
-    // dependendo do estado de autenticação.
-    // Se você quiser garantir que o loginFormContainer seja o padrão absoluto ao iniciar sem usuário,
-    // esta linha pode ser mantida, mas a lógica no onAuthStateChanged é mais robusta.
-    // if (!auth.currentUser) {
-    //     showSection(loginFormContainer);
-    // }
     console.log("DOM totalmente carregado.");
 });
