@@ -514,6 +514,16 @@ function loadPosts() {
             // Se já existe, atualiza os dados (sem recriar o elemento)
             if (postElementsMap.has(postId)) {
                 const existing = postElementsMap.get(postId);
+                // Atualiza apenas o            const postId = docSnap.id;
+            const currentUser = auth.currentUser;
+            const likedBy = post.likedBy || [];
+            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
+
+            postIdsFromFirebase.add(postId);
+
+            // Se já existe, atualiza os dados (sem recriar o elemento)
+            if (postElementsMap.has(postId)) {
+                const existing = postElementsMap.get(postId);
                 // Atualiza apenas o conteúdo e timestamp se mudaram para evitar flicker
                 if (existing.querySelector('p').textContent !== post.content) {
                     existing.querySelector('p').textContent = post.content;
@@ -573,7 +583,35 @@ function loadPosts() {
     `;
     postElement.appendChild(previewDiv);
              }
-          
+            let imageHtml = '';
+            if (post.imageUrl) {
+                imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
+            }
+
+            postElement.innerHTML = `
+                <h3>${post.username || post.userId}</h3>
+                <p>${post.content}</p>
+                ${imageHtml} ${linkPreviewHtml} <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+                <div class="post-actions">
+                    <button class="like-button ${isLiked ? 'liked' : ''}" data-post-id="${postId}" data-likes-count="${post.likesCount || 0}">
+                        ❤️ ${post.likesCount || 0}
+                    </button>
+                    <button class="comment-toggle-button" data-post-id="${postId}">💬 Comentar</button>
+                </div>
+                <div class="post-comments" data-post-id="${postId}" style="display: none;">
+                    <h4>Comentários:</h4>
+                    <div class="comments-list"></div>
+                    <div class="comment-input-area">
+                        <input type="text" placeholder="Adicionar comentário..." class="comment-input">
+                        <button class="submit-comment-button">Enviar</button>
+                    </div>
+                </div>
+            `;
+
+            postsContainer.prepend(postElement);
+            postElementsMap.set(postId, postElement);
+
+// ... (resto da função loadPosts) ...
 
             postsContainer.prepend(postElement); // Adiciona posts novos no topo
             postElementsMap.set(postId, postElement);
