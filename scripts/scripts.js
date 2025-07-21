@@ -510,16 +510,6 @@ function loadPosts() {
             // Se já existe, atualiza os dados (sem recriar o elemento)
             if (postElementsMap.has(postId)) {
                 const existing = postElementsMap.get(postId);
-                // Atualiza apenas o            const postId = docSnap.id;
-            const currentUser = auth.currentUser;
-            const likedBy = post.likedBy || [];
-            const isLiked = currentUser ? likedBy.includes(currentUser.uid) : false;
-
-            postIdsFromFirebase.add(postId);
-
-            // Se já existe, atualiza os dados (sem recriar o elemento)
-            if (postElementsMap.has(postId)) {
-                const existing = postElementsMap.get(postId);
                 // Atualiza apenas o conteúdo e timestamp se mudaram para evitar flicker
                 if (existing.querySelector('p').textContent !== post.content) {
                     existing.querySelector('p').textContent = post.content;
@@ -538,7 +528,8 @@ function loadPosts() {
                     likeBtn.classList.toggle('liked', isLiked);
                     likeBtn.dataset.likesCount = newLikesCount;
                 }
-                return; // Post já existe e foi atualizado
+                // O return deve estar aqui, após as atualizações, para não recriar o elemento.
+                return;
             }
 
             // Criar novo post se não existir
@@ -546,9 +537,30 @@ function loadPosts() {
             postElement.classList.add('post-card');
             postElement.setAttribute('data-post-id', postId); // Adiciona data-attribute para fácil referência
 
+            let linkPreviewHtml = '';
+            if (post.linkPreview && post.linkPreview.url) {
+                linkPreviewHtml = `
+                    <div class="link-preview-box">
+                        ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
+                        <div class="link-preview-texts">
+                            <strong>${post.linkPreview.title || 'Link'}</strong>
+                            <p>${post.linkPreview.description || ''}</p>
+                            <a href="${post.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${post.linkPreview.url}</a>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let imageHtml = '';
+            if (post.imageUrl) {
+                imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
+            }
+
             postElement.innerHTML = `
                 <h3>${post.username || post.userId}</h3>
                 <p>${post.content}</p>
+                ${imageHtml}
+                ${linkPreviewHtml}
                 <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
                 <div class="post-actions">
                     <button class="like-button ${isLiked ? 'liked' : ''}" data-post-id="${postId}" data-likes-count="${post.likesCount || 0}">
@@ -566,55 +578,56 @@ function loadPosts() {
                 </div>
             `;
 
-             if (post.linkPreview && post.linkPreview.url) {
-    const previewDiv = document.createElement('div');
-    previewDiv.classList.add('link-preview-box');
-    previewDiv.innerHTML = `
-        ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
-        <div class="link-preview-texts">
-            <strong>${post.linkPreview.title || 'Link'}</strong>
-            <p>${post.linkPreview.description || ''}</p>
-            <a href="${post.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${post.linkPreview.url}</a>
-        </div>
-    `;
-    postElement.appendChild(previewDiv);
-             }
-            let imageHtml = '';
-            if (post.imageUrl) {
-                imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
-            }
-
-            postElement.innerHTML = `
-                <h3>${post.username || post.userId}</h3>
-                <p>${post.content}</p>
-                ${imageHtml} ${linkPreviewHtml} <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
-                <div class="post-actions">
-                    <button class="like-button ${isLiked ? 'liked' : ''}" data-post-id="${postId}" data-likes-count="${post.likesCount || 0}">
-                        ❤️ ${post.likesCount || 0}
-                    </button>
-                    <button class="comment-toggle-button" data-post-id="${postId}">💬 Comentar</button>
-                </div>
-                <div class="post-comments" data-post-id="${postId}" style="display: none;">
-                    <h4>Comentários:</h4>
-                    <div class="comments-list"></div>
-                    <div class="comment-input-area">
-                        <input type="text" placeholder="Adicionar comentário..." class="comment-input">
-                        <button class="submit-comment-button">Enviar</button>
-                    </div>
-                </div>
-            `;
-
-            postsContainer.prepend(postElement);
-            postElementsMap.set(postId, postElement);
-
-// ... (resto da função loadPosts) ...
-
             postsContainer.prepend(postElement); // Adiciona posts novos no topo
             postElementsMap.set(postId, postElement);
 
-            // 🎯 BOTÃO DE LIKE FUNCIONAL (Refatorado para usar o elemento do post)
-            const likeButton = postElement.querySelector('.like-button'); // Já tem o data-post-id
-            if (likeButton) {
+            // Adiciona listeners para os botões de like e comentário
+            const likeButton = postElement.querySelector('.like-button');
+            likeButton.addEventListener('click', () => toggleLike(postId, likeButton));
+
+            const commentToggleButton = postElement.querySelector('.comment-toggle-button');
+            const postCommentsSection = postElement.querySelector('.post-comments');
+            const commentsList = postCommentsSection.querySelector('.comments-list');
+            const commentInput = postCommentsSection.querySelector('.comment-input');
+            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
+
+            commentToggleButton.addEventListener('click', () => {
+                const isHidden = postCommentsSection.style.display === 'none';
+                postCommentsSection.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
+                    loadComments(postId, commentsList);
+                }
+            });
+
+            submitCommentButton.addEventListener('click', () => {
+                addComment(postId, commentInput.value);
+                commentInput.value = ''; // Limpa o input após enviar
+            });
+        });
+
+        // Remove posts que não existem mais no Firebase
+        const currentPostIds = Array.from(postElementsMap.keys());
+        currentPostIds.forEach(postId => {
+            if (!postIdsFromFirebase.has(postId)) {
+                const elementToRemove = postElementsMap.get(postId);
+                if (elementToRemove) {
+                    elementToRemove.remove();
+                    postElementsMap.delete(postId);
+                }
+            }
+        });
+    });
+}
+
+// As funções toggleLike, loadComments, addComment, loadUsers, subscribeToNotifications,
+// toggleChatSection, sendMessage, loadMessages, createChat, toggleNotificationSection
+// e setupChatListeners devem estar definidas em outras partes do seu script.
+// Elas não estão incluídas aqui para focar na função loadPosts.
+
+
+ // 🎯 BOTÃO DE LIKE FUNCIONAL (Refatorado para usar o elemento do post)
+  const likeButton = postElement.querySelector('.like-button'); // Já tem o data-post-id
+  if (likeButton) {
                 likeButton.addEventListener('click', async () => {
                     const currentLikes = parseInt(likeButton.dataset.likesCount);
                     const postIdFromBtn = likeButton.dataset.postId;
