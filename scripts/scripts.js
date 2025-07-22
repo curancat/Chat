@@ -456,7 +456,7 @@ const postElementsMap = new Map();
 const commentsUnsubscribeMap = new Map();
 
 function loadPosts() {
-    const q = query(collection(db, "posts"), orderBy("timestamp", "desc"));
+    const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
 
     // Use onSnapshot here to get real-time updates and initial load
     onSnapshot(q, (snapshot) => {
