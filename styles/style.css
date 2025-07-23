@@ -38,425 +38,163 @@ header h1 {
 nav {
     background-color: rgba(45, 55, 72, 0.7); /* Azul Escuro Médio semi-transparente */
     border-radius: 15px;
-    padding: 15px 25px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); /* Sombra mais escura */
-    
+    padding: 5px;
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Permite que os botões quebrem a linha */
     justify-content: center;
-    gap: 10px;
-    
-    margin-bottom: 20px;
-    max-width: 800px;
-    width: 100%;
-    box-sizing: border-box;
+    gap: 10px; /* Espaçamento entre os botões */
 }
 
 nav button {
-    background-color: #6A0DAD; /* Roxo de Destaque */
-    color: white;
-    padding: 12px 20px;
+    background-color: #4a5568; /* Azul Acinzentado */
+    color: #e2e8f0;
     border: none;
-    border-radius: 8px;
+    padding: 8px 15px;
+    border-radius: 5px;
     cursor: pointer;
-    font-size: 1em;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-    
-    flex-grow: 1;
-    max-width: 180px;
-    min-width: 120px;
-    text-align: center;
-    box-sizing: border-box;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+    flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
+    max-width: fit-content; /* Ajusta a largura ao conteúdo */
 }
 
 nav button:hover {
-    background-color: #9932CC; /* Roxo Claro */
-    transform: translateY(-2px);
-}
-
-#openNotificationsBtn {
-    position: relative;
-    padding-right: 35px;
-}
-
-#notificationCount {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    background-color: #dc3545; /* Vermelho para notificações não lidas */
-    color: white;
-    border-radius: 50%;
-    padding: 2px 6px;
-    font-size: 0.75em;
-    display: none;
-    pointer-events: none;
+    background-color: #6A0DAD; /* Roxo mais escuro no hover */
 }
 
 main {
-    padding: 20px;
     width: 100%;
     max-width: 800px;
-    margin: 0;
-    background-color: #2d3748; /* Azul Escuro Médio para o main */
-    border-radius: 8px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
-    box-sizing: border-box;
-    
-    flex-grow: 1; 
-    overflow: hidden; 
-    display: flex;
-    flex-direction: column;
 }
 
-/* ESTILO PARA O CONTÊINER DE POSTAGENS: Scroll e Novas no Topo */
-#postsContainer {
-    max-height: calc(100vh - 250px); /* Altura máxima para a área de rolagem */
-    overflow-y: auto; /* Adiciona barra de rolagem vertical */
-    padding-right: 10px; /* Espaço para a barra de rolagem */
-    
-    display: flex;
-    flex-direction: column; /* ✅ Ordem natural */
-    gap: 15px;
-    
-    scrollbar-width: thin;
-    scrollbar-color: #6A0DAD #2d3748; /* Cor da barra de rolagem */
-}
-
-#postsContainer::-webkit-scrollbar {
-    width: 8px;
-}
-
-#postsContainer::-webkit-scrollbar-track {
-    background: #2d3748; /* Fundo da barra de rolagem */
-    border-radius: 10px;
-}
-
-#postsContainer::-webkit-scrollbar-thumb {
-    background: #6A0DAD; /* Cor do "polegar" da barra de rolagem */
-    border-radius: 10px;
-}
-
-#postsContainer::-webkit-scrollbar-thumb:hover {
-    background: #9932CC;
-}
-
-
-.form-container, .section-container {
+/* --- Estilos Gerais de Seções e Formulários --- */
+.section-container, .form-container {
+    background-color: #2d3748; /* Azul Escuro Médio */
     padding: 20px;
-    border: 1px solid #4a5568; /* Borda mais escura */
-    border-radius: 5px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
     margin-bottom: 20px;
-    display: none; /* ESSENCIAL: Todos começam escondidos */
-    
-    flex-shrink: 0; 
-    background-color: #2d3748; /* Cor de fundo para formulários/seções */
+    display: none; /* Escondido por padrão, JavaScript mostra */
 }
 
-#feedSection {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
+.section-container.active, .form-container.active {
+    display: block; /* Mostra a seção ativa */
 }
-
-.form-container.active, .section-container.active {
-    display: block; /* Visto por padrão (para formulários) */
-}
-#feedSection.active {
-    display: flex; /* O feed deve usar flex para organizar seus filhos */
-}
-
 
 h2 {
-    color: #e2e8f0; /* Títulos claros */
-    margin-top: 0;
+    color: #9f7aea; /* Roxo */
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 input[type="email"],
 input[type="password"],
 input[type="text"],
+input[type="url"], /* Adicionado para estilos de URL */
 textarea,
 select {
-    width: calc(100% - 22px);
+    width: calc(100% - 20px);
     padding: 10px;
     margin-bottom: 10px;
-    border: 1px solid #4a5568; /* Borda mais escura */
-    border-radius: 4px;
+    border: 1px solid #4a5568; /* Borda cinza */
+    border-radius: 5px;
+    background-color: #2d3748; /* Cor de fundo do input */
+    color: #e2e8f0; /* Cor do texto do input */
     box-sizing: border-box;
-    background-color: #1a202c; /* Fundo escuro para inputs */
-    color: #e2e8f0; /* Texto claro para inputs */
 }
 
 button {
-    background-color: #6A0DAD; /* Roxo de Destaque */
+    background-color: #6A0DAD; /* Roxo */
     color: white;
     padding: 10px 15px;
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 1em;
+    width: 100%;
+    box-sizing: border-box;
+    transition: background-color 0.3s ease;
 }
 
 button:hover {
-    background-color: #9932CC; /* Roxo Claro */
+    background-color: #553C9A; /* Roxo mais escuro no hover */
 }
 
 .message {
     margin-top: 10px;
     padding: 10px;
-    border-radius: 4px;
-    display: none;
-    color: #1a202c; /* Texto escuro para mensagens de status */
-}
-
-.message.success {
-    background-color: #d4edda; /* Verde claro */
-    color: #155724;
-    border-color: #c3e6cb;
+    border-radius: 5px;
+    text-align: center;
+    font-weight: bold;
 }
 
 .message.error {
-    background-color: #f8d7da; /* Vermelho claro */
-    color: #721c24;
-    border-color: #f5c6cb;
+    background-color: #e53e3e; /* Vermelho */
+    color: white;
 }
 
-/* Post Feed */
+.message.success {
+    background-color: #48bb78; /* Verde */
+    color: white;
+}
+
+/* --- Estilos do Feed --- */
+#postsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
 .post-card {
-    border: 1px solid #4a5568; /* Borda mais escura */
-    padding: 15px;
-    border-radius: 5px;
-    background-color: #2d3748; /* Azul Escuro Médio para o card */
-    color: #e2e8f0; /* Texto claro */
+    background-color: #4a5568; /* Azul Acinzentado */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    color: #e2e8f0;
 }
 
 .post-card h3 {
+    color: #9f7aea;
     margin-top: 0;
-    color: #9932CC; /* Roxo para títulos de post */
+    margin-bottom: 10px;
+    font-size: 1.2em;
 }
 
 .post-card p {
-    margin: 10px 0;
-    line-height: 1.5;
+    margin-bottom: 15px;
+    line-height: 1.6;
 }
 
 .post-card small {
-    color: #cbd5e0; /* Cinza claro para datas */
-    font-size: 0.85em;
+    display: block;
+    text-align: right;
+    color: #cbd5e0;
+    font-size: 0.8em;
 }
 
-.post-actions {
-    margin-top: 10px;
-    display: flex;
-    gap: 10px;
+/* Estilos para a imagem do post */
+.post-image-preview {
+    max-width: 100%; /* Garante que a imagem não transborde o contêiner */
+    height: auto; /* Mantém a proporção da imagem */
+    display: block; /* Remove o espaço extra abaixo da imagem */
+    margin: 15px auto; /* Centraliza a imagem e adiciona margem superior/inferior */
+    border-radius: 8px; /* Bordas arredondadas */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* Sombra para destaque */
+    object-fit: contain; /* Ajusta a imagem dentro da caixa sem cortar */
+    max-height: 400px;
+    border: 1px solid #4a5568;
 }
 
-.like-button, .comment-toggle-button {
-    background-color: #4a5568; /* Cor de fundo para botões de ação do post */
-    color: white;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+/* Estilos para o link preview */
+.link-preview-box {
     display: flex;
     align-items: center;
-    gap: 5px;
-}
-
-.like-button.liked {
-    background-color: #dc3545; /* Vermelho para curtido */
-}
-
-.like-button:hover, .comment-toggle-button:hover {
-    opacity: 0.9;
-    background-color: #6A0DAD; /* Roxo de destaque no hover */
-}
-
-/* Comments Section */
-.post-comments {
-    margin-top: 15px;
-    border-top: 1px solid #4a5568; /* Borda mais escura */
-    padding-top: 15px;
-    display: none;
-}
-
-.post-comments h4 {
-    margin-top: 0;
-    color: #e2e8f0; /* Títulos claros */
-}
-
-.comments-list {
-    margin-bottom: 10px;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #4a5568; /* Borda mais escura */
-    padding: 10px;
-    border-radius: 4px;
-    background-color: #1a202c; /* Fundo escuro para lista de comentários */
-}
-
-.comment {
-    background-color: #2d3748; /* Azul escuro médio para comentário */
-    padding: 8px 12px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    word-wrap: break-word;
-    color: #e2e8f0; /* Texto claro */
-}
-
-.comment p {
-    margin: 0;
-    font-size: 0.95em;
-}
-
-.comment small {
-    font-size: 0.75em;
-    color: #cbd5e0; /* Cinza claro para datas */
-}
-
-.comment-input-area {
-    display: flex;
-    gap: 5px;
-}
-
-.comment-input-area input {
-    flex-grow: 1;
-    margin-bottom: 0;
-}
-
-/* Chat Section */
-#chatMessagesDisplay {
-    border: 1px solid #4a5568;
-    height: 300px;
-    overflow-y: scroll;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    background-color: #1a202c; /* Fundo escuro para chat */
-}
-
-.message-bubble {
-    padding: 8px 12px;
-    border-radius: 15px;
-    margin-bottom: 8px;
-    max-width: 70%;
-    word-wrap: break-word;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-}
-
-.message-bubble strong {
-    font-size: 0.9em;
-    display: block;
-    margin-bottom: 2px;
-    color: #9932CC; /* Roxo para nome de usuário */
-}
-
-.message-bubble small {
-    font-size: 0.7em;
-    color: #cbd5e0; /* Cinza claro para timestamp */
-    display: block;
-    text-align: right;
-}
-
-.message-bubble.sent {
-    background-color: #6A0DAD; /* Roxo para mensagens enviadas */
-    color: white;
-    margin-left: auto;
-    border-bottom-right-radius: 2px;
-}
-
-.message-bubble.received {
-    background-color: #4a5568; /* Azul escuro mais claro para mensagens recebidas */
-    color: #e2e8f0; /* Texto claro */
-    margin-right: auto;
-    border-bottom-left-radius: 2px;
-}
-
-#chatRecipientSelect {
-    margin-bottom: 10px;
-}
-
-/* Notifications Section */
-#notificationsList {
-    border: 1px solid #4a5568;
-    padding: 10px;
-    border-radius: 4px;
-    background-color: #2d3748; /* Fundo para notificações */
-}
-
-.notification-item {
-    background-color: #1a202c; /* Fundo para item de notificação */
-    padding: 10px;
-    margin-bottom: 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.notification-item:hover {
-    background-color: #4a5568; /* Azul escuro mais claro no hover */
-}
-
-.notification-item.unread {
-    background-color: #9932CC; /* Roxo claro para notificações não lidas */
-    border-left: 5px solid #6A0DAD; /* Borda roxa de destaque */
-    color: white; /* Texto branco para notificação não lida */
-}
-
-.notification-item p {
-    margin: 0;
-    font-size: 0.95em;
-}
-
-.notification-item small {
-    font-size: 0.75em;
-    color: #cbd5e0;
-    display: block;
-    text-align: right;
-}
-
-
-/* Media query para telas pequenas (ex: celulares) */
-@media (max-width: 768px) {
-    nav {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 8px;
-        padding: 10px 15px;
-    }
-
-    nav button {
-        flex-grow: 1;
-        flex-basis: calc(50% - 4px);
-        max-width: unset;
-        min-width: unset;
-        font-size: 0.9em;
-        padding: 10px 15px;
-    }
-
-    @media (max-width: 480px) {
-        nav button {
-            flex-basis: 100%;
-        }
-    }
-    
-    body, main {
-        padding: 10px;
-    }
-    #postsContainer {
-        max-height: calc(100vh - 200px);
-        padding-right: 0;
-    }
-}
-.link-preview-box {
-    border: 1px solid #4a5568;
-    border-radius: 6px;
-    margin-top: 10px;
-    background-color: #1a202c;
-    display: flex;
     gap: 10px;
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
     padding: 10px;
+    margin-top: 15px;
 }
 
 .link-preview-img {
@@ -481,30 +219,27 @@ button:hover {
     color: #cbd5e0;
     font-size: 0.85em;
     margin: 0;
-    }
-
-/* style.css */
-
-/* ... (seus estilos existentes, incluindo os novos para .post-card e .link-preview-box) ... */
-
-/* Estilos para a imagem do post */
-.post-image-preview {
-    max-width: 100%; /* Garante que a imagem não transborde o contêiner */
-    height: auto; /* Mantém a proporção da imagem */
-    display: block; /* Remove o espaço extra abaixo da imagem */
-    margin: 15px auto; /* Centraliza a imagem e adiciona margem superior/inferior */
-    border-radius: 8px; /* Bordas arredondadas */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* Sombra para destaque */
-    object-fit: contain; /* Ajusta a imagem dentro da caixa sem cortar */
-    max-height: 400px; /* Limita a altura máxima para evitar imagens muito grandes */
-    border: 1px solid #4a5568; /* Borda sutil */
 }
 
-/* Opcional: Se a imagem e o link preview puderem coexistir, você pode ajustar as margens */
-/* Por exemplo, se quiser mais espaço entre a imagem e o link preview */
-.post-image-preview + .link-preview-box {
-    margin-top: 20px; /* Mais espaço se um link preview seguir uma imagem */
+/* --- NOVOS ESTILOS PARA VÍDEO --- */
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio (9 / 16 = 0.5625) */
+    height: 0;
+    overflow: hidden;
+    margin: 15px auto;
+    max-width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    background-color: #000; /* Fundo preto enquanto o vídeo carrega */
 }
 
-
-/* ... (resto do seu style.css) ... */
+.video-container .video-player { /* Usando .video-player para o iframe */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 8px; /* Aplicar nas bordas do iframe também */
+}
