@@ -142,7 +142,7 @@ button:hover {
 #postsContainer {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 20px; /* Manter este gap */
 }
 
 .post-card {
@@ -170,6 +170,7 @@ button:hover {
     text-align: right;
     color: #cbd5e0;
     font-size: 0.8em;
+    margin-top: 10px; /* Adicionado para separar a data dos botões */
 }
 
 /* Estilos para a imagem do post */
@@ -242,4 +243,45 @@ button:hover {
     height: 100%;
     border: 0;
     border-radius: 8px; /* Aplicar nas bordas do iframe também */
+}
+
+/* --- Estilos para as Ações do Post (Curtir/Comentar) --- */
+.post-actions {
+    display: flex;
+    justify-content: space-around; /* Espaça os botões */
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #6A0DAD; /* Linha separadora */
+}
+
+.post-actions button {
+    flex: 1; /* Faz os botões ocuparem espaço igual */
+    margin: 0 5px; /* Espaçamento entre os botões */
+    padding: 8px 10px;
+    background-color: #6A0DAD; /* Cor padrão do botão */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.3s ease;
+    display: flex; /* Para alinhar ícone e texto */
+    align-items: center;
+    justify-content: center;
+    gap: 5px; /* Espaço entre ícone e texto */
+}
+
+.post-actions button:hover {
+    background-color: #553C9A;
+}
+
+/* Estilo para botão de like quando curtido */
+.post-actions button.liked {
+    background-color: #8B5CF6; /* Um roxo mais claro quando curtido */
+}
+
+.post-actions .likes-count,
+.post-actions .comments-count {
+    font-weight: bold;
+    margin-right: 3px;
 }
