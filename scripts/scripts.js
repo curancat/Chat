@@ -1,9 +1,11 @@
 // --- Configuração do Firebase ---
+// Importa as funções específicas do Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-analytics.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js"; // Adicionado updateEmail, updatePassword
 import { getFirestore, collection, doc, setDoc, serverTimestamp, query, orderBy, onSnapshot, getDocs, where, updateDoc, arrayUnion, arrayRemove, increment, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
 
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDd4ZIyPIoJJCHCPeeUIChaEsNSBMLpVgA",
   authDomain: "vlog-8a75f.firebaseapp.com",
@@ -11,15 +13,24 @@ const firebaseConfig = {
   storageBucket: "vlog-8a75f.firebasestorage.app",
   messagingSenderId: "1063952650353",
   appId: "1:1063952650353:web:25f37c51b49daeaf81cbd0",
-  measurementId: "G-GRM2E926W3"
+  measurementId: "G-G9K64F8H0M"
 };
 
+// Inicializa o Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- Elementos DOM ---
+// --- Elementos do DOM ---
+const loginFormContainer = document.getElementById("loginFormContainer");
+const registerFormContainer = document.getElementById("registerFormContainer");
+const createPostSection = document.getElementById("createPostSection");
+const feedSection = document.getElementById("feedSection");
+const chatSection = document.getElementById("chatSection");
+const notificationsSection = document.getElementById("notificationsSection");
+const profileSection = document.getElementById("profileSection");
+
 const loginEmail = document.getElementById("loginEmail");
 const loginPassword = document.getElementById("loginPassword");
 const loginSubmit = document.getElementById("loginSubmit");
@@ -31,954 +42,598 @@ const registerPassword = document.getElementById("registerPassword");
 const registerSubmit = document.getElementById("registerSubmit");
 const registerMessage = document.getElementById("registerMessage");
 
-const publishPostBtn = document.getElementById("publishPostBtn");
 const postContent = document.getElementById("postContent");
-const postImageUrl = document.getElementById("postImageUrl"); // Moved up for clarity
+const postImageUrl = document.getElementById("postImageUrl");
+const postVideoUrl = document.getElementById("postVideoUrl"); // NOVO: elemento da URL do vídeo
+const publishPostBtn = document.getElementById("publishPostBtn");
 const postMessage = document.getElementById("postMessage");
-
-const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
-const chatMessageInput = document.getElementById("chatMessageInput");
-const chatMessageDiv = document.getElementById("chatMessage");
-const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
-const chatRecipientSelect = document.getElementById("chatRecipientSelect");
-
-const logoutBtn = document.getElementById("logoutBtn");
-const loginBtn = document.getElementById("loginBtn");
-const registerBtn = document.getElementById("registerBtn");
-const viewFeedBtn = document.getElementById("viewFeedBtn");
-const createPostBtn = document.getElementById("createPostBtn");
-const openChatBtn = document.getElementById("openChatBtn");
-const openNotificationsBtn = document.getElementById("openNotificationsBtn");
-const notificationCountSpan = document.getElementById("notificationCount");
-
-const loginFormContainer = document.getElementById("loginFormContainer");
-const registerFormContainer = document.getElementById("registerFormContainer");
-const createPostSection = document.getElementById("createPostSection");
-const chatSection = document.getElementById("chatSection");
-const feedSection = document.getElementById("feedSection");
-const notificationsSection = document.getElementById("notificationsSection");
 const postsContainer = document.getElementById("postsContainer");
-const notificationsList = document.getElementById("notificationsList");
 
-const openProfileBtn = document.getElementById("openProfileBtn");
-const profileSection = document.getElementById("profileSection");
+const chatRecipientSelect = document.getElementById("chatRecipientSelect");
+const chatMessagesDisplay = document.getElementById("chatMessagesDisplay");
+const chatMessageInput = document.getElementById("chatMessageInput");
+const chatSendMessageBtn = document.getElementById("chatSendMessageBtn");
+const chatMessage = document.getElementById("chatMessage");
+
+const notificationsList = document.getElementById("notificationsList");
+const notificationCount = document.getElementById("notificationCount");
+
 const profileEmailDisplay = document.getElementById("profileEmailDisplay");
 const profileUsernameInput = document.getElementById("profileUsernameInput");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const profileMessage = document.getElementById("profileMessage");
 
-// --- Utilitários ---
+const loginBtn = document.getElementById("loginBtn");
+const registerBtn = document.getElementById("registerBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const viewFeedBtn = document.getElementById("viewFeedBtn");
+const createPostBtn = document.getElementById("createPostBtn");
+const openChatBtn = document.getElementById("openChatBtn");
+const openNotificationsBtn = document.getElementById("openNotificationsBtn");
+const openProfileBtn = document.getElementById("openProfileBtn");
 
-const allSections = [
-    loginFormContainer,
-    registerFormContainer,
-    createPostSection,
-    chatSection,
-    feedSection,
-    notificationsSection,
-    profileSection
-];
+let currentUserUsername = null; // Variável global para armazenar o nome de usuário
+
+// --- Funções Auxiliares ---
+function showMessage(element, msg, type) {
+    element.textContent = msg;
+    element.className = `message ${type}`;
+    element.style.display = 'block';
+    setTimeout(() => {
+        element.style.display = 'none';
+        element.textContent = '';
+    }, 5000);
+}
 
 function hideAllForms() {
-    allSections.forEach(section => {
-        section.classList.remove('active');
-        section.style.display = 'none'; // Ensure it's hidden
-    });
+    loginFormContainer.classList.remove("active");
+    registerFormContainer.classList.remove("active");
+    createPostSection.classList.remove("active");
+    feedSection.classList.remove("active");
+    chatSection.classList.remove("active");
+    notificationsSection.classList.remove("active");
+    profileSection.classList.remove("active");
 }
 
 function showSection(sectionElement) {
     hideAllForms();
-    sectionElement.classList.add('active');
-    sectionElement.style.display = ''; // Let CSS control display for 'active'
-    // Special handling for feedSection to use flex if needed
-    if (sectionElement.id === 'feedSection') {
-        sectionElement.style.display = 'flex';
-    }
+    sectionElement.classList.add("active");
 }
 
-function showMessage(element, msg, type = 'success') {
-    element.textContent = msg;
-    element.classList.remove('success', 'error');
-    element.classList.add(type);
-    element.style.display = 'block';
-    setTimeout(() => {
-        element.textContent = '';
-        element.style.display = 'none';
-        element.classList.remove('success', 'error');
-    }, 4000);
+// --- Funções Auxiliares para Vídeos ---
+function extractYouTubeVideoId(url) {
+    const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+    const match = url.match(regExp);
+    return (match && match[1] && match[1].length === 11) ? match[1] : null;
 }
 
-function updateNavButtons(isLoggedIn) {
-    loginBtn.style.display = isLoggedIn ? 'none' : 'block';
-    registerBtn.style.display = isLoggedIn ? 'none' : 'block';
-    logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
-    viewFeedBtn.style.display = isLoggedIn ? 'block' : 'none';
-    createPostBtn.style.display = isLoggedIn ? 'block' : 'none';
-    openChatBtn.style.display = isLoggedIn ? 'block' : 'none';
-    openNotificationsBtn.style.display = isLoggedIn ? 'block' : 'none';
-    openProfileBtn.style.display = isLoggedIn ? 'block' : 'none';
+function extractVimeoVideoId(url) {
+    const regExp = /(?:vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/([^\/]*)\/videos\/|album\/(\d+)\/video\/|video\/|)(\d+)(?:$|\/|\?))/;
+    const match = url.match(regExp);
+    return (match && match[3]) ? match[3] : null;
+}
 
-    if (isLoggedIn) {
-        setupNotificationListener(auth.currentUser.uid);
-    } else {
-        notificationCountSpan.textContent = '0';
-        if (unsubscribeNotifications) {
-            unsubscribeNotifications();
-            unsubscribeNotifications = null;
+// --- Lógica de Autenticação ---
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        // Usuário logado
+        loginBtn.style.display = "none";
+        registerBtn.style.display = "none";
+        logoutBtn.style.display = "block";
+        viewFeedBtn.style.display = "block";
+        createPostBtn.style.display = "block";
+        openChatBtn.style.display = "block";
+        openNotificationsBtn.style.display = "block";
+        openProfileBtn.style.display = "block";
+
+        // Obter nome de usuário do Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+            currentUserUsername = userDocSnap.data().username;
+            profileUsernameInput.value = currentUserUsername; // Preenche o campo de perfil
+        } else {
+            // Se o documento do usuário não existir (primeiro login, por exemplo), crie-o
+            // Também adiciona o e-mail como username inicial se não houver um
+            currentUserUsername = user.email.split('@')[0]; // Pega a parte antes do @
+            await setDoc(userDocRef, {
+                email: user.email,
+                username: currentUserUsername
+            });
         }
-        // If no user is logged in, ensure only login/register are visible.
-        // This is handled by onAuthStateChanged redirecting to loginFormContainer.
+        profileEmailDisplay.textContent = user.email; // Exibe o email no perfil
+
+        // Carrega posts, usuários para chat, etc.
+        loadPosts();
+        loadUsersForChat();
+        loadNotifications();
+        showSection(feedSection); // Mostra o feed por padrão ao logar
+    } else {
+        // Usuário deslogado
+        loginBtn.style.display = "block";
+        registerBtn.style.display = "block";
+        logoutBtn.style.display = "none";
+        viewFeedBtn.style.display = "none";
+        createPostBtn.style.display = "none";
+        openChatBtn.style.display = "none";
+        openNotificationsBtn.style.display = "none";
+        openProfileBtn.style.display = "none";
+        currentUserUsername = null;
+        postsContainer.innerHTML = ''; // Limpa o feed
+        chatMessagesDisplay.innerHTML = ''; // Limpa o chat
+        chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Limpa seleção de chat
+        notificationsList.innerHTML = ''; // Limpa notificações
+        notificationCount.textContent = '0'; // Reseta contador
+
+        showSection(loginFormContainer); // Mostra o formulário de login
     }
-}
-
-// --- Event Listeners dos Botões de Navegação ---
-loginBtn.addEventListener('click', () => {
-    showSection(loginFormContainer);
-    loginMessage.textContent = '';
-    loginMessage.style.display = 'none';
 });
 
-registerBtn.addEventListener('click', () => {
-    showSection(registerFormContainer);
-    registerMessage.textContent = '';
-    registerMessage.style.display = 'none';
-});
-
-createPostBtn.addEventListener('click', () => {
-    showSection(createPostSection);
-    postContent.value = '';
-    postImageUrl.value = ''; // Clear image URL field
-    postMessage.textContent = '';
-    postMessage.style.display = 'none';
-});
-
-openChatBtn.addEventListener('click', () => {
-    showSection(chatSection);
-    loadChatUsers();
-    chatMessageInput.value = '';
-    chatMessageDiv.textContent = '';
-    chatMessageDiv.style.display = 'none';
-});
-
-viewFeedBtn.addEventListener('click', () => {
-    showSection(feedSection);
-    // loadPosts() is already real-time via onSnapshot,
-    // so just showing the section is enough.
-});
-
-openNotificationsBtn.addEventListener('click', () => {
-    showSection(notificationsSection);
-    loadNotifications();
-});
-
-openProfileBtn.addEventListener('click', () => {
-    showSection(profileSection);
-    loadUserProfile();
-    profileMessage.textContent = '';
-    profileMessage.style.display = 'none';
-});
-
-// --- Autenticação ---
+// --- Login e Cadastro ---
 loginSubmit.addEventListener("click", async () => {
-    const email = loginEmail.value.trim();
-    const password = loginPassword.value.trim();
-
-    if (!email || !password) {
-        showMessage(loginMessage, "Por favor, insira email e senha.", 'error');
-        return;
-    }
-
+    const email = loginEmail.value;
+    const password = loginPassword.value;
     try {
         await signInWithEmailAndPassword(auth, email, password);
-        showMessage(loginMessage, "Login bem-sucedido!");
-        // onAuthStateChanged will handle showing feed and loading posts
+        showMessage(loginMessage, "Login bem-sucedido!", 'success');
     } catch (error) {
-        let errorMessage = "Erro de login.";
-        if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Email inválido.';
-        } else if (error.code === 'auth/user-disabled') {
-            errorMessage = 'Usuário desativado.';
-        } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-            errorMessage = 'Email ou senha incorretos.';
-        } else {
-            errorMessage = error.message;
-        }
-        showMessage(loginMessage, errorMessage, 'error');
-        console.error("Erro de login:", error);
+        console.error("Erro no login:", error);
+        showMessage(loginMessage, "Erro no login: " + error.message, 'error');
     }
 });
 
 registerSubmit.addEventListener("click", async () => {
+    const username = registerUsername.value.trim();
     const email = registerEmail.value.trim();
     const password = registerPassword.value.trim();
-    const username = registerUsername.value.trim();
 
     if (!username || !email || !password) {
-        showMessage(registerMessage, "Por favor, preencha todos os campos.", 'error');
-        return;
-    }
-    if (password.length < 6) {
-        showMessage(registerMessage, "A senha deve ter pelo menos 6 caracteres.", 'error');
+        showMessage(registerMessage, "Preencha todos os campos.", 'error');
         return;
     }
 
     try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", cred.user.uid), {
-            username: username,
-            email: email,
-            createdAt: serverTimestamp()
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Salvar nome de usuário no Firestore
+        await setDoc(doc(db, "users", user.uid), {
+            email: user.email,
+            username: username
         });
-        showMessage(registerMessage, "Cadastro realizado com sucesso!");
-        registerUsername.value = '';
-        registerEmail.value = '';
-        registerPassword.value = '';
-        showSection(loginFormContainer); // Redirect to login after successful registration
+
+        showMessage(registerMessage, "Cadastro bem-sucedido! Faça login.", 'success');
+        registerUsername.value = "";
+        registerEmail.value = "";
+        registerPassword.value = "";
+        showSection(loginFormContainer); // Volta para login após cadastro
     } catch (error) {
-        let errorMessage = "Erro no cadastro.";
-        if (error.code === 'auth/email-already-in-use') {
-            errorMessage = 'Este email já está em uso.';
-        } else if (error.code === 'auth/invalid-email') {
-            errorMessage = 'Email inválido.';
-        } else if (error.code === 'auth/weak-password') {
-            errorMessage = 'Senha muito fraca.';
-        } else {
-            errorMessage = error.message;
-        }
-        showMessage(registerMessage, errorMessage, 'error');
-        console.error("Erro de cadastro:", error);
+        console.error("Erro no cadastro:", error);
+        showMessage(registerMessage, "Erro no cadastro: " + error.message, 'error');
     }
 });
 
 logoutBtn.addEventListener("click", async () => {
     try {
         await signOut(auth);
-        showMessage(loginMessage, "Logout bem-sucedido!");
-        // onAuthStateChanged will handle showing login and cleaning up
+        showMessage(loginMessage, "Logout bem-sucedido!", 'success');
+        showSection(loginFormContainer);
     } catch (error) {
-        showMessage(loginMessage, error.message, 'error');
-        console.error("Erro de logout:", error);
+        console.error("Erro no logout:", error);
+        showMessage(loginMessage, "Erro no logout: " + error.message, 'error');
     }
 });
 
-// Monitorar estado de autenticação
-onAuthStateChanged(auth, (user) => {
-    updateNavButtons(!!user);
-    if (user) {
-        console.log("Usuário logado:", user.email, user.uid);
-        // Only show feed if not already on feed, or if it's login/register section
-        const currentActiveSection = allSections.find(section => section.classList.contains('active'));
-        if (!currentActiveSection || currentActiveSection === loginFormContainer || currentActiveSection === registerFormContainer) {
-            showSection(feedSection);
-        }
-        loadPosts(); // Always load posts when user is logged in
-        setupNotificationListener(user.uid);
-    } else {
-        console.log("Nenhum usuário logado.");
-        // If no user, show login form unless registration is already active.
-        const currentActiveSection = allSections.find(section => section.classList.contains('active'));
-        if (!currentActiveSection || (currentActiveSection !== registerFormContainer && currentActiveSection !== loginFormContainer)) {
-             showSection(loginFormContainer);
-        }
-    }
-});
+// --- Navegação ---
+viewFeedBtn.addEventListener("click", () => showSection(feedSection));
+createPostBtn.addEventListener("click", () => showSection(createPostSection));
+openChatBtn.addEventListener("click", () => showSection(chatSection));
+openNotificationsBtn.addEventListener("click", () => showSection(notificationsSection));
+openProfileBtn.addEventListener("click", () => showSection(profileSection));
+loginBtn.addEventListener("click", () => showSection(loginFormContainer));
+registerBtn.addEventListener("click", () => showSection(registerFormContainer));
 
-// --- Publicar Post ---
+// --- Lógica de Posts ---
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value.trim();
     const imageUrl = postImageUrl.value.trim();
-    const user = auth.currentUser;
+    const videoUrl = postVideoUrl.value.trim(); // Obtenha o valor do campo de vídeo
 
-    if (!user) {
+    if (!content && !imageUrl && !videoUrl) { // Inclua videoUrl na validação
+        showMessage(postMessage, "O post não pode ser vazio.", 'error');
+        return;
+    }
+
+    if (!auth.currentUser) {
         showMessage(postMessage, "Você precisa estar logado para publicar posts.", 'error');
         return;
     }
-    if (!content && !imageUrl) {
-        showMessage(postMessage, "Preencha o conteúdo do post ou adicione uma imagem.", 'error');
-        return;
+
+    let postData = {
+        content: content,
+        timestamp: serverTimestamp(),
+        userId: auth.currentUser.uid,
+        username: currentUserUsername || auth.currentUser.email // Usa o username se disponível
+    };
+
+    let postType = 'text'; // Tipo padrão
+    if (imageUrl) {
+        postData.imageUrl = imageUrl;
+        postType = 'image';
+    } else if (videoUrl) { // Se houver URL de vídeo
+        const youtubeId = extractYouTubeVideoId(videoUrl);
+        const vimeoId = extractVimeoVideoId(videoUrl);
+
+        if (youtubeId) {
+            postData.videoType = 'youtube';
+            postData.videoId = youtubeId;
+            postType = 'video';
+        } else if (vimeoId) {
+            postData.videoType = 'vimeo';
+            postData.videoId = vimeoId;
+            postType = 'video';
+        } else {
+            // Se não for YouTube nem Vimeo, trata como um link genérico
+            // Você pode querer validar URLs de vídeo não suportadas ou tratá-las de outra forma
+            // Por simplicidade aqui, podemos adicionar uma prévia de link básica ou simplesmente ignorar
+            // Se a URL não for reconhecida como YouTube/Vimeo, vamos tratá-la como um link genérico
+            postData.linkPreview = { url: videoUrl, title: "Link de Vídeo", description: "Clique para assistir." };
+            postType = 'link';
+        }
+    } else if (content.startsWith('http://') || content.startsWith('https://')) {
+        // Se o conteúdo em si for uma URL, tenta gerar uma prévia de link
+        // Esta parte requer um serviço de backend para buscar metadados de links.
+        // Se você não tiver um, isso não vai funcionar.
+        // Para o propósito deste exemplo, vamos remover a lógica de `fetchLinkPreview` aqui,
+        // focando em `imageUrl` e `videoUrl` explícitos.
+        // Se você tinha `fetchLinkPreview` e ele funcionava, reintegre-o aqui.
+        postData.linkPreview = { url: content, title: "Link Compartilhado", description: "Clique para abrir." };
+        postType = 'link';
     }
 
+    postData.postType = postType; // Salva o tipo do post
+
     try {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        let username = user.email;
-        if (userDoc.exists()) {
-            username = userDoc.data().username || user.email;
-        } else {
-            console.warn("Documento do usuário não encontrado para UID:", user.uid);
-            await setDoc(doc(db, "users", user.uid), { username: user.email, email: user.email }, { merge: true });
-        }
-
-        await addDoc(collection(db, "posts"), { // Changed to addDoc for auto-ID
-            content: content,
-            imageUrl: imageUrl || null,
-            userId: user.uid,
-            username: username,
-            timestamp: serverTimestamp(),
-            likesCount: 0,
-            likedBy: []
-        });
-
-        postContent.value = '';
-        postImageUrl.value = '';
-        showMessage(postMessage, "Post publicado com sucesso!");
-        showSection(feedSection); // Go back to feed after publishing
+        await addDoc(collection(db, "posts"), postData); // Usa addDoc para posts novos
+        showMessage(postMessage, "Post publicado com sucesso!", 'success');
+        postContent.value = "";
+        postImageUrl.value = "";
+        postVideoUrl.value = ""; // Limpa o campo de vídeo
     } catch (error) {
-        showMessage(postMessage, "Erro ao publicar post.", 'error');
         console.error("Erro ao publicar post:", error);
+        showMessage(postMessage, "Erro ao publicar post: " + error.message, 'error');
     }
 });
 
-// --- Função para Curtir/Descurtir um Post ---
-async function toggleLike(postId, likeButtonElement) {
-    const user = auth.currentUser;
-    if (!user) {
-        showMessage(postMessage, "Você precisa estar logado para curtir posts.", 'error');
-        return;
-    }
-
-    const postRef = doc(db, "posts", postId);
-    const userId = user.uid;
-
-    try {
-        const postDocSnap = await getDoc(postRef);
-        if (!postDocSnap.exists()) {
-            console.error("Post não encontrado para curtir/descurtir:", postId);
-            showMessage(postMessage, "Post não encontrado.", 'error');
-            return;
-        }
-        const postData = postDocSnap.data();
-        const latestLikedBy = postData.likedBy || [];
-        const isCurrentlyLiked = latestLikedBy.includes(userId);
-        const currentLikes = postData.likesCount || 0;
-
-        if (isCurrentlyLiked) {
-            await updateDoc(postRef, {
-                likesCount: increment(-1),
-                likedBy: arrayRemove(userId)
-            });
-            showMessage(postMessage, "Você descurtiu o post.");
-        } else {
-            await updateDoc(postRef, {
-                likesCount: increment(1),
-                likedBy: arrayUnion(userId)
-            });
-            showMessage(postMessage, "Você curtiu o post!");
-
-            const postOwnerId = postData.userId;
-            const currentUserDoc = await getDoc(doc(db, "users", user.uid));
-            let currentUserUsername = user.email;
-            if (currentUserDoc.exists()) {
-                 currentUserUsername = currentUserDoc.data().username || user.email;
-            }
-
-            if (postOwnerId !== user.uid) {
-                addNotification(postOwnerId, user.uid, currentUserUsername, 'like', `curtiu seu post: "${postData.content.substring(0, 30)}..."`, postId);
-            }
-        }
-        // The onSnapshot in loadPosts will automatically update the UI
-    } catch (error) {
-        console.error("Erro ao curtir/descurtir o post:", error);
-        showMessage(postMessage, "Erro ao processar sua curtida.", 'error');
-    }
-}
-
-// --- Funções de Comentário ---
-
-async function addComment(postId, commentText) {
-    const user = auth.currentUser;
-    if (!user) {
-        showMessage(postMessage, "Você precisa estar logado e digitar um comentário.", 'error');
-        return;
-    }
-    if (!commentText.trim()) {
-        showMessage(postMessage, "Por favor, digite um comentário válido.", 'error');
-        return;
-    }
-
-    try {
-        const userDocSnapshot = await getDoc(doc(db, "users", user.uid));
-        let username = user.email;
-        if (userDocSnapshot.exists()) {
-            username = userDocSnapshot.data().username || user.email;
-        } else {
-             console.warn("Documento do usuário não encontrado para UID:", user.uid, "Usando email para comentário.");
-        }
-
-        const commentsCollectionRef = collection(db, "posts", postId, "comments");
-        await addDoc(commentsCollectionRef, {
-            userId: user.uid,
-            username: username,
-            text: commentText,
-            timestamp: serverTimestamp()
-        });
-        // No need to show message here, as onSnapshot will update comments list
-        // showMessage(postMessage, "Comentário adicionado com sucesso!");
-
-        const postDocSnapshot = await getDoc(doc(db, "posts", postId));
-        if (postDocSnapshot.exists()) {
-            const postData = postDocSnapshot.data();
-            const postOwnerId = postData.userId;
-            if (postOwnerId !== user.uid) {
-                addNotification(postOwnerId, user.uid, username, 'comment', `comentou em seu post: "${commentText.substring(0, 30)}..."`, postId);
-            }
-        }
-    } catch (error) {
-        console.error("Erro ao adicionar comentário:", error);
-        showMessage(postMessage, "Erro ao adicionar comentário.", 'error');
-    }
-}
-
-function setupCommentsListener(postId, commentsListElement) {
-    const commentsCollectionRef = collection(db, "posts", postId, "comments");
-    const q = query(commentsCollectionRef, orderBy("timestamp", "asc"));
-
-    return onSnapshot(q, (snapshot) => {
-        commentsListElement.innerHTML = '';
-        snapshot.forEach((doc) => {
-            const comment = doc.data();
-            const commentElement = document.createElement('div');
-            commentElement.classList.add('comment');
-            commentElement.innerHTML = `
-                <p><strong>${comment.username || comment.userId}:</strong> ${comment.text}</p>
-                <small>${comment.timestamp ? new Date(comment.timestamp.toDate()).toLocaleString() : 'Enviando...'}</small>
-            `;
-            commentsListElement.appendChild(commentElement);
-        });
-        commentsListElement.scrollTop = commentsListElement.scrollHeight;
-    }, (error) => {
-        console.error("Erro ao carregar comentários:", error);
-        showMessage(postMessage, "Erro ao carregar comentários.", 'error');
-    });
-}
-
-// --- Carregar Posts (Feed) ---
-const postElementsMap = new Map();
-const commentsUnsubscribeMap = new Map();
-
 function loadPosts() {
+    // Ordenar do mais antigo para o mais novo (ascendente) para que o prepend coloque o mais novo no topo
     const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
 
-    // Use onSnapshot here to get real-time updates and initial load
+    // Mantenha um conjunto de IDs de posts já no DOM para evitar duplicação
+    const postIdsInDom = new Set();
+
     onSnapshot(q, (snapshot) => {
-        const postIdsFromFirebase = new Set();
-        const currentUser = auth.currentUser; // Get current user once
-
-        snapshot.forEach((docSnap) => {
-            const post = docSnap.data();
-            const postId = docSnap.id;
-            postIdsFromFirebase.add(postId);
-
-            const isLiked = currentUser ? (post.likedBy || []).includes(currentUser.uid) : false;
-
-            // If post already exists in DOM, just update its dynamic parts
-            if (postElementsMap.has(postId)) {
-                const existingPostElement = postElementsMap.get(postId);
-                const likeBtn = existingPostElement.querySelector('.like-button');
-                const newLikesCount = post.likesCount || 0;
-
-                // Update text content and image if they change
-                const contentP = existingPostElement.querySelector('p');
-                if (contentP && contentP.textContent !== post.content) {
-                    contentP.textContent = post.content;
-                }
-                const imagePreview = existingPostElement.querySelector('.post-image-preview');
-                if (post.imageUrl && (!imagePreview || imagePreview.src !== post.imageUrl)) {
-                    if (imagePreview) {
-                        imagePreview.src = post.imageUrl;
-                    } else { // Create image if it's new
-                         const imgElement = document.createElement('img');
-                         imgElement.src = post.imageUrl;
-                         imgElement.alt = "Post Image";
-                         imgElement.classList.add('post-image-preview');
-                         contentP.after(imgElement); // Insert after content
-                    }
-                } else if (!post.imageUrl && imagePreview) {
-                    imagePreview.remove(); // Remove image if URL is cleared
-                }
-
-
-                if (parseInt(likeBtn.dataset.likesCount) !== newLikesCount || likeBtn.classList.contains('liked') !== isLiked) {
-                    likeBtn.innerHTML = `❤️ ${newLikesCount}`;
-                    likeBtn.classList.toggle('liked', isLiked);
-                    likeBtn.dataset.likesCount = newLikesCount;
-                }
-                // Update timestamp
-                const smallElement = existingPostElement.querySelector('small');
-                if (smallElement) {
-                    smallElement.textContent = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...';
-                }
-                return; // Skip creating a new element
-            }
-
-            // Create new post element
-            const postElement = document.createElement('div');
-            postElement.classList.add('post-card');
-            postElement.setAttribute('data-post-id', postId);
-
-            let imageHtml = '';
-            // FIX: Ensure imageHtml is correctly generated if imageUrl exists
-            if (post.imageUrl) {
-                imageHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
-            }
-
-            // Add link preview if available
-            let linkPreviewHtml = '';
-            if (post.linkPreview && post.linkPreview.url) {
-                linkPreviewHtml = `
-                    <div class="link-preview-box">
-                        ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
-                        <div class="link-preview-texts">
-                            <strong>${post.linkPreview.title || 'Link'}</strong>
-                            <p>${post.linkPreview.description || ''}</p>
-                            <a href="${post.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${post.linkPreview.url}</a>
-                        </div>
-                    </div>
-                `;
-            }
-
-            postElement.innerHTML = `
-                <h3>${post.username || post.userId}</h3>
-                <p>${post.content}</p>
-                ${imageHtml}
-                ${linkPreviewHtml}
-                <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
-                <div class="post-actions">
-                    <button class="like-button ${isLiked ? 'liked' : ''}" data-post-id="${postId}" data-likes-count="${post.likesCount || 0}">
-                        ❤️ ${post.likesCount || 0}
-                    </button>
-                    <button class="comment-toggle-button" data-post-id="${postId}">💬 Comentar</button>
-                </div>
-                <div class="post-comments" data-post-id="${postId}" style="display: none;">
-                    <h4>Comentários:</h4>
-                    <div class="comments-list"></div>
-                    <div class="comment-input-area">
-                        <input type="text" placeholder="Adicionar comentário..." class="comment-input">
-                        <button class="submit-comment-button">Enviar</button>
-                    </div>
-                </div>
-            `;
-
-            postsContainer.prepend(postElement); // Add new posts to the top
-            postElementsMap.set(postId, postElement);
-
-            // Add event listeners for new elements
-            const likeButton = postElement.querySelector('.like-button');
-            if (likeButton) {
-                likeButton.addEventListener('click', () => toggleLike(postId, likeButton));
-            }
-
-            const commentToggleButton = postElement.querySelector('.comment-toggle-button');
-            const postCommentsSection = postElement.querySelector('.post-comments');
-            const commentsListElement = postCommentsSection.querySelector('.comments-list');
-            const submitCommentButton = postCommentsSection.querySelector('.submit-comment-button');
-            const commentInput = postCommentsSection.querySelector('.comment-input');
-
-            if (commentToggleButton && postCommentsSection) {
-                commentToggleButton.addEventListener('click', () => {
-                    if (postCommentsSection.style.display === 'none') {
-                        postCommentsSection.style.display = 'block';
-                        const unsubscribe = setupCommentsListener(postId, commentsListElement);
-                        commentsUnsubscribeMap.set(postId, unsubscribe);
-                    } else {
-                        postCommentsSection.style.display = 'none';
-                        if (commentsUnsubscribeMap.has(postId)) {
-                            commentsUnsubscribeMap.get(postId)();
-                            commentsUnsubscribeMap.delete(postId);
-                        }
-                    }
-                });
-            }
-
-            if (submitCommentButton && commentInput) {
-                submitCommentButton.addEventListener('click', async () => {
-                    const commentText = commentInput.value.trim();
-                    if (commentText) {
-                        await addComment(postId, commentText);
-                        commentInput.value = '';
-                    } else {
-                        showMessage(postMessage, "Por favor, digite um comentário.", 'error');
-                    }
-                });
+        // Primeiro, lidar com remoções (se um post foi apagado do Firestore)
+        const postIdsFromFirebase = new Set(snapshot.docs.map(doc => doc.id));
+        
+        postsContainer.childNodes.forEach(node => {
+            if (node.nodeType === 1 && node.dataset.postId && !postIdsFromFirebase.has(node.dataset.postId)) {
+                node.remove();
+                postIdsInDom.delete(node.dataset.postId);
             }
         });
 
-        // Remove posts that no longer exist in Firebase
-        for (const [postId, element] of postElementsMap.entries()) {
-            if (!postIdsFromFirebase.has(postId)) {
-                element.remove();
-                postElementsMap.delete(postId);
-                if (commentsUnsubscribeMap.has(postId)) {
-                    commentsUnsubscribeMap.get(postId)();
-                    commentsUnsubscribeMap.delete(postId);
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                const post = change.doc.data();
+                const postId = change.doc.id;
+
+                if (!postIdsInDom.has(postId)) { // Adiciona apenas se não estiver no DOM
+                    const postElement = document.createElement("div");
+                    postElement.classList.add("post-card");
+                    postElement.dataset.postId = postId; // Armazena o ID no elemento DOM
+    
+                    let mediaHtml = ''; // Para imagens ou vídeos
+                    let linkPreviewHtml = ''; // Para prévias de links
+    
+                    // Lógica para Imagem
+                    if (post.postType === 'image' && post.imageUrl) {
+                        mediaHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
+                    }
+                    // Lógica para Vídeo (player embutido)
+                    else if (post.postType === 'video' && post.videoId) {
+                        if (post.videoType === 'youtube') {
+                            mediaHtml = `
+                                <div class="video-container">
+                                    <iframe
+                                        src="https://www.youtube.com/embed/${post.videoId}"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen
+                                        class="video-player">
+                                    </iframe>
+                                </div>
+                            `;
+                        } else if (post.videoType === 'vimeo') {
+                            mediaHtml = `
+                                <div class="video-container">
+                                    <iframe
+                                        src="https://player.vimeo.com/video/${post.videoId}"
+                                        frameborder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowfullscreen
+                                        class="video-player">
+                                    </iframe>
+                                </div>
+                            `;
+                        }
+                    }
+                    // Lógica para Pré-visualização de Link (se houver, e não for vídeo/imagem explícitos)
+                    // Este bloco é para links gerais, não para players de vídeo
+                    else if (post.postType === 'link' && post.linkPreview && post.linkPreview.url) {
+                        linkPreviewHtml = `
+                            <div class="link-preview-box">
+                                ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
+                                <div class="link-preview-texts">
+                                    <strong>${post.linkPreview.title || 'Link'}</strong>
+                                    <p>${post.linkPreview.description || ''}</p>
+                                    <a href="${post.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${post.linkPreview.url}</a>
+                                </div>
+                            </div>
+                        `;
+                    }
+    
+                    postElement.innerHTML = `
+                        <h3>${post.username || post.userId}</h3>
+                        <p>${post.content}</p>
+                        ${mediaHtml}     ${linkPreviewHtml} <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+                        <div class="post-actions">
+                            </div>
+                    `;
+    
+                    postsContainer.prepend(postElement); // Adiciona o post no topo (mais recente)
+                    postIdsInDom.add(postId);
+                }
+            } else if (change.type === "modified") {
+                const updatedPost = change.doc.data();
+                const updatedPostId = change.doc.id;
+                const existingPostElement = document.querySelector(`[data-post-id="${updatedPostId}"]`);
+    
+                if (existingPostElement) {
+                    let mediaHtml = '';
+                    let linkPreviewHtml = '';
+    
+                    // Mesma lógica de mediaHtml/linkPreviewHtml do "added"
+                    if (updatedPost.postType === 'image' && updatedPost.imageUrl) {
+                        mediaHtml = `<img src="${updatedPost.imageUrl}" alt="Post Image" class="post-image-preview">`;
+                    } else if (updatedPost.postType === 'video' && updatedPost.videoId) {
+                        if (updatedPost.videoType === 'youtube') {
+                            mediaHtml = `
+                                <div class="video-container">
+                                    <iframe
+                                        src="https://www.youtube.com/embed/${updatedPost.videoId}"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen
+                                        class="video-player">
+                                    </iframe>
+                                </div>
+               `;
+                        } else if (updatedPost.videoType === 'vimeo') {
+                            mediaHtml = `
+                                <div class="video-container">
+                                    <iframe
+                                        src="https://player.vimeo.com/video/${updatedPost.videoId}"
+                                        frameborder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowfullscreen
+                                        class="video-player">
+                                    </iframe>
+                                </div>
+                            `;
+                        }
+                    } else if (updatedPost.postType === 'link' && updatedPost.linkPreview && updatedPost.linkPreview.url) {
+                        linkPreviewHtml = `
+                            <div class="link-preview-box">
+                                ${updatedPost.linkPreview.image ? `<img src="${updatedPost.linkPreview.image}" class="link-preview-img">` : ''}
+                                <div class="link-preview-texts">
+                                    <strong>${updatedPost.linkPreview.title || 'Link'}</strong>
+                                    <p>${updatedPost.linkPreview.description || ''}</p>
+                                    <a href="${updatedPost.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${updatedPost.linkPreview.url}</a>
+                                </div>
+                            </div>
+                        `;
+                    }
+    
+                    existingPostElement.innerHTML = `
+                        <h3>${updatedPost.username || updatedPost.userId}</h3>
+                        <p>${updatedPost.content}</p>
+                        ${mediaHtml}
+                        ${linkPreviewHtml}
+                        <small>${updatedPost.timestamp ? new Date(updatedPost.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+                        <div class="post-actions">
+                            </div>
+                    `;
+                }
+            } else if (change.type === "removed") {
+                const removedPostId = change.doc.id;
+                const elementToRemove = document.querySelector(`[data-post-id="${removedPostId}"]`);
+                if (elementToRemove) {
+                    elementToRemove.remove();
+                    postIdsInDom.delete(removedPostId);
                 }
             }
-        }
-    }, (error) => {
-        console.error("Erro ao carregar posts:", error);
-        showMessage(postsContainer, "Erro ao carregar posts.", 'error');
+        });
     });
 }
 
 
-// --- Chat Privado ---
+// --- Lógica de Chat ---
 let currentChatRecipientId = null;
-let unsubscribeChat = null;
+let unsubscribeChatMessages = null; // Para poder desinscrever o listener anterior
 
-async function loadChatUsers() {
-    chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>';
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
+chatRecipientSelect.addEventListener('change', (event) => {
+    const selectedUserId = event.target.value;
+    if (selectedUserId) {
+        currentChatRecipientId = selectedUserId;
+        loadChatMessages(auth.currentUser.uid, selectedUserId);
+    } else {
+        currentChatRecipientId = null;
+        chatMessagesDisplay.innerHTML = ''; // Limpa mensagens se nenhum usuário for selecionado
+        if (unsubscribeChatMessages) {
+            unsubscribeChatMessages(); // Desinscreve o listener anterior
+            unsubscribeChatMessages = null;
+        }
+    }
+});
 
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, orderBy("username"));
+chatSendMessageBtn.addEventListener('click', async () => {
+    const messageContent = chatMessageInput.value.trim();
+    if (!messageContent || !currentChatRecipientId || !auth.currentUser) {
+        showMessage(chatMessage, "Selecione um destinatário e digite uma mensagem.", 'error');
+        return;
+    }
+
+    const senderId = auth.currentUser.uid;
+    const recipientId = currentChatRecipientId;
+
     try {
-        const querySnapshot = await getDocs(q);
+        // Adiciona a mensagem para o remetente
+        await addDoc(collection(db, "chats", senderId, "messages"), {
+            to: recipientId,
+            from: senderId,
+            content: messageContent,
+            timestamp: serverTimestamp(),
+            read: false // Mensagem enviada, não lida ainda pelo destinatário
+        });
 
+        // Adiciona a mensagem para o destinatário (para facilitar a consulta)
+        // Isso cria uma cópia, pode ser otimizado com subcoleções compartilhadas
+        await addDoc(collection(db, "chats", recipientId, "messages"), {
+            to: recipientId,
+            from: senderId,
+            content: messageContent,
+            timestamp: serverTimestamp(),
+            read: false // Mensagem enviada, não lida ainda
+        });
+
+        chatMessageInput.value = "";
+        showMessage(chatMessage, "Mensagem enviada!", 'success');
+        // A mensagem aparecerá automaticamente devido ao onSnapshot em loadChatMessages
+    } catch (error) {
+        console.error("Erro ao enviar mensagem:", error);
+        showMessage(chatMessage, "Erro ao enviar mensagem: " + error.message, 'error');
+    }
+});
+
+async function loadUsersForChat() {
+    chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Limpa antes de carregar
+    const usersCollectionRef = collection(db, "users");
+    try {
+        const querySnapshot = await getDocs(usersCollectionRef);
         querySnapshot.forEach((doc) => {
-            const userData = doc.data();
-            if (doc.id !== currentUser.uid) {
-                const option = document.createElement('option');
-                option.value = doc.id;
-                option.textContent = userData.username || userData.email;
+            const user = doc.data();
+            const userId = doc.id;
+            if (userId !== auth.currentUser.uid) { // Não listar a si mesmo
+                const option = document.createElement("option");
+                option.value = userId;
+                option.textContent = user.username || user.email;
                 chatRecipientSelect.appendChild(option);
             }
         });
-
-        if (!chatRecipientSelect.dataset.listenerAdded) {
-            chatRecipientSelect.addEventListener('change', (event) => {
-                const newRecipientId = event.target.value;
-                if (newRecipientId && newRecipientId !== currentChatRecipientId) {
-                    currentChatRecipientId = newRecipientId;
-                    chatMessagesDisplay.innerHTML = '';
-                    if (unsubscribeChat) {
-                        unsubscribeChat();
-                    }
-                    listenForChatMessages(currentUser.uid, currentChatRecipientId);
-                } else if (!newRecipientId) {
-                    currentChatRecipientId = null;
-                    chatMessagesDisplay.innerHTML = '';
-                    if (unsubscribeChat) {
-                        unsubscribeChat();
-                    }
-                }
-            });
-            chatRecipientSelect.dataset.listenerAdded = true;
-        }
-
-        if (currentChatRecipientId && chatRecipientSelect.querySelector(`option[value="${currentChatRecipientId}"]`)) {
-            chatRecipientSelect.value = currentChatRecipientId;
-            // The change event listener should handle loading messages if recipient is already selected
-            // No need to explicitly call listenForChatMessages here unless it's for initial load and recipient is pre-selected
-        }
-
     } catch (error) {
-        console.error("Erro ao carregar usuários do chat:", error);
-        showMessage(chatMessageDiv, "Erro ao carregar usuários.", 'error');
+        console.error("Erro ao carregar usuários para chat:", error);
     }
 }
 
-function listenForChatMessages(user1Id, user2Id) {
-    if (unsubscribeChat) {
-        unsubscribeChat();
+function loadChatMessages(userId1, userId2) {
+    if (unsubscribeChatMessages) {
+        unsubscribeChatMessages(); // Desinscreve o listener anterior
     }
 
-    const chatCollectionRef = collection(db, "privateChats");
-
-    const q1 = query(chatCollectionRef,
-        where("senderId", "==", user1Id),
-        where("recipientId", "==", user2Id)
+    // Consulta mensagens enviadas por userId1 para userId2 OU enviadas por userId2 para userId1
+    // Simplificado: estamos lendo a subcoleção de 'messages' do usuário logado
+    // O ideal seria uma coleção de chat compartilhada ou uma lógica mais robusta
+    const messagesRef = collection(db, "chats", userId1, "messages");
+    const q = query(
+        messagesRef,
+        where("to", "==", userId2),
+        orderBy("timestamp", "asc")
     );
-    const q2 = query(chatCollectionRef,
-        where("senderId", "==", user2Id),
-        where("recipientId", "==", user1Id)
-    );
 
-    // Using Promise.all with two onSnapshot listeners to merge and sort messages
-    let unsubscribe1 = null;
-    let unsubscribe2 = null;
-
-    // Use a flag to ensure messages are displayed only after both listeners have fired at least once initially
-    let q1InitialLoad = false;
-    let q2InitialLoad = false;
-
-    function renderAllMessages() {
-        if (!q1InitialLoad || !q2InitialLoad) return; // Wait for both initial loads
-
-        const allMessages = [];
-        const snapshot1Docs = unsubscribe1.snapshot?.docs || [];
-        const snapshot2Docs = unsubscribe2.snapshot?.docs || [];
-
-        snapshot1Docs.forEach(doc => allMessages.push(doc.data()));
-        snapshot2Docs.forEach(doc => allMessages.push(doc.data()));
-
-        allMessages.sort((a, b) => {
-            const timestampA = a.timestamp?.toDate() || new Date(0);
-            const timestampB = b.timestamp?.toDate() || new Date(0);
-            return timestampA.getTime() - timestampB.getTime();
+    unsubscribeChatMessages = onSnapshot(q, (snapshot) => {
+        chatMessagesDisplay.innerHTML = ''; // Limpa antes de renderizar
+        snapshot.forEach((doc) => {
+            const msg = doc.data();
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("chat-message");
+            if (msg.from === auth.currentUser.uid) {
+                messageElement.classList.add("sent"); // Mensagens enviadas pelo usuário logado
+            } else {
+                messageElement.classList.add("received"); // Mensagens recebidas
+            }
+            messageElement.textContent = `${msg.content} (${new Date(msg.timestamp.toDate()).toLocaleString()})`;
+            chatMessagesDisplay.appendChild(messageElement);
         });
-
-        chatMessagesDisplay.innerHTML = '';
-        allMessages.forEach(message => {
-            displayChatMessage(message);
-        });
+        // Rola para a mensagem mais recente
         chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
-    }
-
-    unsubscribe1 = onSnapshot(q1, (snapshot) => {
-        unsubscribe1.snapshot = snapshot; // Store snapshot for combined rendering
-        q1InitialLoad = true;
-        renderAllMessages();
     }, (error) => {
-        console.error("Erro ao ouvir mensagens do chat (q1):", error);
-        showMessage(chatMessageDiv, "Erro ao carregar mensagens.", 'error');
+        console.error("Erro ao carregar mensagens do chat:", error);
+        showMessage(chatMessage, "Erro ao carregar mensagens do chat: " + error.message, 'error');
     });
-
-    unsubscribe2 = onSnapshot(q2, (snapshot) => {
-        unsubscribe2.snapshot = snapshot; // Store snapshot for combined rendering
-        q2InitialLoad = true;
-        renderAllMessages();
-    }, (error) => {
-        console.error("Erro ao ouvir mensagens do chat (q2):", error);
-        showMessage(chatMessageDiv, "Erro ao carregar mensagens.", 'error');
-    });
-
-    unsubscribeChat = () => { // Combined unsubscribe function
-        if (unsubscribe1) unsubscribe1();
-        if (unsubscribe2) unsubscribe2();
-    };
 }
 
 
-function displayChatMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message-bubble');
-    const currentUser = auth.currentUser;
+// --- Lógica de Notificações ---
+function loadNotifications() {
+    if (!auth.currentUser) return;
 
-    let senderName = message.senderUsername || "Desconhecido";
-    if (currentUser && message.senderId === currentUser.uid) {
-        messageElement.classList.add('sent');
-        senderName = "Você";
-    } else {
-        messageElement.classList.add('received');
-    }
+    const notificationsRef = collection(db, "users", auth.currentUser.uid, "notifications");
+    const q = query(notificationsRef, orderBy("timestamp", "desc"));
 
-    const messageTimestamp = message.timestamp?.toDate ? message.timestamp.toDate() : new Date();
+    onSnapshot(q, (snapshot) => {
+        notificationsList.innerHTML = ''; // Limpa antes de renderizar
+        let unreadCount = 0;
+        snapshot.forEach((doc) => {
+            const notification = doc.data();
+            if (!notification.read) {
+                unreadCount++;
+            }
 
-    messageElement.innerHTML = `
-        <strong>${senderName}</strong>
-        <p>${message.message || ''}</p>
-        <small>${messageTimestamp.toLocaleTimeString()}</small>
-    `;
-    chatMessagesDisplay.appendChild(messageElement);
-}
+            const notificationElement = document.createElement("div");
+            notificationElement.classList.add("notification-item");
+            if (!notification.read) {
+                notificationElement.classList.add("unread");
+            }
+            notificationElement.textContent = notification.message + " (" + new Date(notification.timestamp.toDate()).toLocaleString() + ")";
+            notificationsList.appendChild(notificationElement);
 
-chatSendMessageBtn.addEventListener("click", async () => {
-    const text = chatMessageInput.value.trim();
-    const user = auth.currentUser;
-    const recipientId = chatRecipientSelect.value;
-
-    if (!user) {
-        showMessage(chatMessageDiv, "Você precisa estar logado para enviar mensagens.", 'error');
-        return;
-    }
-    if (!recipientId) {
-        showMessage(chatMessageDiv, "Selecione um destinatário para o chat.", 'error');
-        return;
-    }
-    if (!text) {
-        showMessage(chatMessageDiv, "Digite uma mensagem.", 'error');
-        return;
-    }
-
-    try {
-        const senderDocSnapshot = await getDoc(doc(db, "users", user.uid));
-        let senderUsername = user.email;
-        if (senderDocSnapshot.exists()) {
-            senderUsername = senderDocSnapshot.data().username || user.email;
-        } else {
-            console.warn("Documento do remetente não encontrado para UID:", user.uid, "Usando email.");
-        }
-
-        await addDoc(collection(db, "privateChats"), {
-            senderId: user.uid,
-            senderUsername: senderUsername,
-            recipientId: recipientId,
-            message: text,
-            type: 'text',
-            timestamp: serverTimestamp()
+            // Marcar como lido ao ser visualizado (ou ao clicar, se preferir)
+            if (!notification.read) {
+                // Idealmente, você pode querer um botão "Marcar como lido" ou marcar ao clicar
+                // Por enquanto, vamos marcar como lido quando o usuário vê a notificação.
+                updateDoc(doc.ref, { read: true }).catch(e => console.error("Erro ao marcar notificação como lida:", e));
+            }
         });
+        notificationCount.textContent = unreadCount.toString(); // Atualiza o contador de notificações não lidas
+    }, (error) => {
+        console.error("Erro ao carregar notificações:", error);
+    });
+}
 
-        showMessage(chatMessageDiv, "Mensagem enviada!");
-        chatMessageInput.value = '';
-
-        const recipientUserDoc = await getDoc(doc(db, "users", recipientId));
-        let recipientUsername = recipientId;
-        if (recipientUserDoc.exists()) {
-            recipientUsername = recipientUserDoc.data().username || recipientId;
-        }
-
-        if (recipientId !== user.uid) {
-            addNotification(recipientId, user.uid, senderUsername, 'chat_message', `enviou uma mensagem: "${text.substring(0, 30)}..."`);
-        }
-
-    } catch (error) {
-        showMessage(chatMessageDiv, "Erro ao enviar mensagem.", 'error');
-        console.error("Erro ao enviar mensagem de chat:", error);
-    }
-});
-
-// --- NOVO: Funções de Notificação ---
-async function addNotification(recipientId, senderId, senderUsername, type, message, relatedPostId = null) {
-    if (recipientId === senderId) {
-        return;
-    }
+async function sendNotification(recipientId, message) {
     try {
-        await addDoc(collection(db, "notifications"), {
-            recipientId: recipientId,
-            senderId: senderId,
-            senderUsername: senderUsername,
-            type: type,
+        await addDoc(collection(db, "users", recipientId, "notifications"), {
             message: message,
-            relatedPostId: relatedPostId,
             timestamp: serverTimestamp(),
             read: false
         });
     } catch (error) {
-        console.error("Erro ao adicionar notificação:", error);
+        console.error("Erro ao enviar notificação:", error);
     }
 }
 
-let unsubscribeNotifications = null;
-
-function setupNotificationListener(userId) {
-    if (!userId) {
-        console.warn("setupNotificationListener chamado sem userId.");
-        return;
-    }
-    if (unsubscribeNotifications) {
-        unsubscribeNotifications();
-        console.log("Listener de notificações anterior desativado.");
-    }
-
-    const q = query(collection(db, "notifications"),
-        where("recipientId", "==", userId),
-        where("read", "==", false)
-    );
-
-    unsubscribeNotifications = onSnapshot(q, (snapshot) => {
-        notificationCountSpan.textContent = snapshot.size;
-        if (snapshot.size > 0) {
-            notificationCountSpan.style.display = 'inline-block';
-        } else {
-            notificationCountSpan.style.display = 'none';
-        }
-        console.log(`Você tem ${snapshot.size} notificações não lidas.`);
-    }, (error) => {
-        console.error("Erro ao ouvir notificações:", error);
-    });
-    console.log("Listener de notificações ativado para:", userId);
-}
-
-async function loadNotifications() {
-    const user = auth.currentUser;
-    if (!user) {
-        showMessage(notificationsSection, "Você precisa estar logado para ver as notificações.", 'error');
-        return;
-    }
-
-    notificationsList.innerHTML = '';
-
-    const q = query(collection(db, "notifications"),
-        where("recipientId", "==", user.uid),
-        orderBy("timestamp", "desc")
-    );
-
-    onSnapshot(q, async (snapshot) => {
-        notificationsList.innerHTML = '';
-        const notificationsToMarkAsRead = [];
-
-        snapshot.forEach((doc) => {
-            const notification = doc.data();
-            const notificationId = doc.id;
-
-            const notificationElement = document.createElement('div');
-            notificationElement.classList.add('notification-item');
-            if (!notification.read) {
-                notificationElement.classList.add('unread');
-                // notificationsToMarkAsRead.push(notificationId); // Moved to click listener or a "Mark all read" button
-            }
-
-            let displayMessage = `${notification.senderUsername || 'Usuário Desconhecido'} ${notification.message}`;
-            if (notification.type === 'like' || notification.type === 'comment') {
-                displayMessage += ` (Post: ${notification.relatedPostId ? notification.relatedPostId.substring(0, 5) + '...' : 'N/A'})`;
-            }
-
-            notificationElement.innerHTML = `
-                <p>${displayMessage}</p>
-                <small>${notification.timestamp ? new Date(notification.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
-            `;
-            notificationsList.appendChild(notificationElement);
-
-            notificationElement.addEventListener('click', async () => {
-                if (!notification.read) {
-                    await markNotificationAsRead(notificationId);
-                }
-            });
-        });
-
-        // Consider adding a "Mark All as Read" button instead of doing it automatically on load
-        // if (notificationsToMarkAsRead.length > 0) {
-        //     for (const id of notificationsToMarkAsRead) {
-        //         await markNotificationAsRead(id);
-        //     }
-        // }
-    }, (error) => {
-        console.error("Erro ao carregar notificações:", error);
-        showMessage(notificationsSection, "Erro ao carregar notificações.", 'error');
-    });
-}
-
-async function markNotificationAsRead(notificationId) {
-    try {
-        const notificationRef = doc(db, "notifications", notificationId);
-        await updateDoc(notificationRef, {
-            read: true
-        });
-        console.log("Notificação marcada como lida:", notificationId);
-    } catch (error) {
-        console.error("Erro ao marcar notificação como lida:", error);
-        showMessage(notificationsSection, "Erro ao marcar notificação como lida.", 'error');
-    }
-}
-
-// --- NOVO: Funções de Perfil do Usuário ---
-async function loadUserProfile() {
-    const user = auth.currentUser;
-    if (!user) {
-        showMessage(profileMessage, "Você precisa estar logado para ver seu perfil.", 'error');
-        return;
-    }
-
-    try {
-        const userDocRef = doc(db, "users", user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            profileEmailDisplay.textContent = userData.email || user.email;
-            profileUsernameInput.value = userData.username || '';
-        } else {
-            profileEmailDisplay.textContent = user.email;
-            profileUsernameInput.value = '';
-            console.warn("Documento do usuário não encontrado no Firestore para perfil.");
-            await setDoc(doc(db, "users", user.uid), { email: user.email }, { merge: true });
-        }
-    } catch (error) {
-        console.error("Erro ao carregar dados do perfil:", error);
-        showMessage(profileMessage, "Erro ao carregar dados do perfil.", 'error');
-    }
-}
-
+// --- Lógica de Perfil ---
 saveProfileBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user) {
@@ -987,27 +642,32 @@ saveProfileBtn.addEventListener('click', async () => {
     }
 
     const newUsername = profileUsernameInput.value.trim();
-
+    
     if (!newUsername) {
         showMessage(profileMessage, "O nome de usuário não pode ser vazio.", 'error');
         return;
-      }
+    }
 
     try {
         const userDocRef = doc(db, "users", user.uid);
         await updateDoc(userDocRef, {
             username: newUsername
         });
-        showMessage(profileMessage, "Nome de usuário atualizado com sucesso!");
+        currentUserUsername = newUsername; // Atualiza a variável global
+        showMessage(profileMessage, "Nome de usuário atualizado com sucesso!", 'success');
     } catch (error) {
         console.error("Erro ao atualizar perfil:", error);
         showMessage(profileMessage, "Erro ao atualizar perfil: " + error.message, 'error');
     }
 });
 
-// Initialization: Hide all forms and let onAuthStateChanged handle the initial display
+
+// Inicialização: Ao carregar a página, se não houver um usuário logado, mostra o formulário de login.
 document.addEventListener('DOMContentLoaded', () => {
+    // Garante que todos os formulários estejam escondidos no início
     hideAllForms();
+
+    // O onAuthStateChanged já lida com qual seção mostrar inicialmente
+    // dependendo do estado de autenticação.
     console.log("DOM totalmente carregado.");
 });
-                         
