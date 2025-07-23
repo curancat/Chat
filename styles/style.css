@@ -3,13 +3,7 @@
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    /* Ajuste o padding-top para acomodar o cabeçalho fixo. */
-    /* Você pode precisar ajustar este valor (ex: 150px) para a altura exata do seu cabeçalho. */
-    padding-top: 150px; /* Aumenta o espaço no topo para o cabeçalho fixo */
-    padding-left: 20px; /* Mantém o padding lateral */
-    padding-right: 20px; /* Mantém o padding lateral */
-    padding-bottom: 20px; /* Mantém o padding inferior */
-    
+    padding: 0;
     background-color: #1a202c; /* Azul Escuro Quase Preto */
     color: #e2e8f0; /* Texto claro */
     
@@ -19,6 +13,7 @@ body {
     justify-content: flex-start;
     min-height: 100vh;
     box-sizing: border-box;
+    padding: 20px;
 }
 
 header {
@@ -28,17 +23,10 @@ header {
     text-align: center;
     width: 100%;
     max-width: 800px;
-    /* REMOVIDO: margin-bottom: 20px; (não é necessário para um elemento fixo) */
+    margin-bottom: 20px;
     border-radius: 8px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.4); /* Sombra mais escura */
     box-sizing: border-box;
-
-    /* NOVAS PROPRIEDADES PARA FIXAR O CABEÇALHO*/
-    position: fixed; /* Fixa o elemento na tela*/
-    top: 0; /* Alinha ao topo*/
-    left: 50%; /* Centraliza horizontalmente*/
-    transform: translateX(-50%); /* Ajusta para centralização exata*/
-    z-index: 1000; /* Garante que fique acima de outros conteúdos*/
 }
 
 header h1 {
@@ -66,14 +54,8 @@ nav button {
     cursor: pointer;
     font-size: 0.9em;
     transition: background-color 0.3s ease;
-    /* REMOVIDO: flex-grow: 1; (para evitar encolhimento indesejado)*/
-    /* REMOVIDO: max-width: fit-content; (o flex-shrink e min-width cuidarão disso)*/
-
-    /* ADICIONADO: Propriedades para controle de tamanho fixo/mínimo*/
-    flex-shrink: 0; /* Impede que os botões encolham*/
-    min-width: 80px; /* Define um tamanho mínimo para os botões. Ajuste se necessário.*/
-    white-space: nowrap; /* Garante que o texto do botão não quebre a linha*/
-    box-sizing: border-box; /* Garante que padding e border sejam incluídos na largura/altura*/
+    flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
+    max-width: fit-content; /* Ajusta a largura ao conteúdo */
 }
 
 nav button:hover {
@@ -108,7 +90,7 @@ h2 {
 input[type="email"],
 input[type="password"],
 input[type="text"],
-input[type="url"],
+input[type="url"], /* Adicionado para estilos de URL */
 textarea,
 select {
     width: calc(100% - 20px);
@@ -302,17 +284,4 @@ button:hover {
 .post-actions .comments-count {
     font-weight: bold;
     margin-right: 3px;
-}
-
-/* Media query para telas menores (smartphones)*/
-@media (max-width: 820px) { /* Ajuste o breakpoint (820px) se necessário*/
-    header {
-        max-width: 100%; /* Permite que o cabeçalho ocupe 100% da largura em telas menores*/
-        border-radius: 0; /* Opcional: Remove borda arredondada nas laterais para uma aparência "edge-to-edge"*/
-    }
-    body {
-        /* Ajuste o padding lateral para telas muito pequenas, se necessário */
-        padding-left: 10px;
-        padding-right: 10px;
-    }
     }
