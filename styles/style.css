@@ -35,18 +35,19 @@ header h1 {
 }
 
 /* --- Estilo do Menu de Navegação --- */
+/* --- Estilo do Menu de Navegação --- */
 nav {
-    background-color: rgba(45, 55, 72, 0.7); /* Azul Escuro Médio semi-transparente */
+    background-color: rgba(45, 55, 72, 0.7);
     border-radius: 15px;
     padding: 5px;
     display: flex;
-    flex-wrap: wrap; /* Permite que os botões quebrem a linha */
+    flex-wrap: wrap;
     justify-content: center;
     gap: 10px; /* Espaçamento entre os botões */
 }
 
 nav button {
-    background-color: #4a5568; /* Azul Acinzentado */
+    background-color: #4a5568;
     color: #e2e8f0;
     border: none;
     padding: 8px 15px;
@@ -54,14 +55,19 @@ nav button {
     cursor: pointer;
     font-size: 0.9em;
     transition: background-color 0.3s ease;
-    flex-grow: 1; /* Permite que os botões cresçam para preencher o espaço */
-    max-width: fit-content; /* Ajusta a largura ao conteúdo */
+    /* REMOVE flex-grow: 1; */ /* <-- Remova esta linha */
+    /* REMOVE max-width: fit-content; */ /* <-- Pode remover esta linha também, ou manter se quiser garantir que não passem do conteúdo */
+
+    /* ADICIONE estas propriedades para controle de tamanho fixo/mínimo */
+    flex-shrink: 0; /* Impede que os itens encolham */
+    min-width: 80px; /* Defina um tamanho mínimo para os botões */
+    white-space: nowrap; /* Garante que o texto não quebre, se for o caso */
+    box-sizing: border-box; /* Garante que padding e border sejam incluídos na largura/altura */
 }
 
 nav button:hover {
-    background-color: #6A0DAD; /* Roxo mais escuro no hover */
+    background-color: #6A0DAD;
 }
-
 main {
     width: 100%;
     max-width: 800px;
