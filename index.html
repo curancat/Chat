@@ -39,27 +39,28 @@
             <p id="registerMessage" class="message"></p>
         </section>
 
-        <section id="createPostSection" class="form-container">
-            <h2>Novo Post</h2>
-            <input type="text" id="postContent" placeholder="No que você está pensando?">
-            <input type="url" id="postImageUrl" placeholder="Cole a URL de uma imagem (opcional)">
-            <input type="url" id="postVideoUrl" placeholder="Cole a URL de um vídeo (YouTube/Vimeo) (opcional)"> <button id="publishPostBtn">Publicar</button>
+        <section id="createPostSection" class="section-container">
+            <h2>Criar Novo Post</h2>
+            <textarea id="postContent" placeholder="O que você está pensando?" rows="4"></textarea>
+            <input type="url" id="postImageUrl" placeholder="URL da Imagem (opcional)">
+            <input type="url" id="postVideoUrl" placeholder="URL do Vídeo (YouTube/Vimeo - opcional)">
+            <button id="publishPostBtn">Publicar</button>
             <p id="postMessage" class="message"></p>
         </section>
 
         <section id="feedSection" class="section-container">
-            <h2>Feed</h2>
+            <h2>Seu Feed</h2>
             <div id="postsContainer">
-            </div>
+                </div>
         </section>
 
-        <section id="chatSection" class="form-container">
-            <h2>Chat</h2>
+        <section id="chatSection" class="section-container">
+            <h2>Chat Privado</h2>
             <select id="chatRecipientSelect">
                 <option value="">Selecione um usuário</option>
             </select>
             <div id="chatMessagesDisplay">
-            </div>
+                </div>
             <input type="text" id="chatMessageInput" placeholder="Digite sua mensagem...">
             <button id="chatSendMessageBtn">Enviar</button>
             <p id="chatMessage" class="message"></p>
@@ -68,10 +69,10 @@
         <section id="notificationsSection" class="section-container">
             <h2>Notificações</h2>
             <div id="notificationsList">
-            </div>
+                </div>
         </section>
 
-        <section id="profileSection" class="form-container">
+        <section id="profileSection" class="section-container">
             <h2>Meu Perfil</h2>
             <p><strong>Email:</strong> <span id="profileEmailDisplay"></span></p>
             <label for="profileUsernameInput">Nome de Usuário:</label>
@@ -79,6 +80,7 @@
             <button id="saveProfileBtn">Salvar</button>
             <p id="profileMessage" class="message"></p>
         </section>
+
     </main>
 
     <script type="module" src="scripts/scripts.js"></script>
