@@ -44,7 +44,7 @@ const registerMessage = document.getElementById("registerMessage");
 
 const postContent = document.getElementById("postContent");
 const postImageUrl = document.getElementById("postImageUrl");
-const postVideoUrl = document.getElementById("postVideoUrl"); // NOVO: elemento da URL do vídeo
+const postVideoUrl = document.getElementById("postVideoUrl");
 const publishPostBtn = document.getElementById("publishPostBtn");
 const postMessage = document.getElementById("postMessage");
 const postsContainer = document.getElementById("postsContainer");
@@ -72,7 +72,8 @@ const openChatBtn = document.getElementById("openChatBtn");
 const openNotificationsBtn = document.getElementById("openNotificationsBtn");
 const openProfileBtn = document.getElementById("openProfileBtn");
 
-let currentUserUsername = null; // Variável global para armazenar o nome de usuário
+let currentUserUsername = null;
+const postElementMap = new Map(); // Para rastrear elementos de postagens e evitar duplicação/re-criação desnecessária
 
 // --- Funções Auxiliares ---
 function showMessage(element, msg, type) {
@@ -131,23 +132,20 @@ onAuthStateChanged(auth, async (user) => {
         const userDocSnap = await getDoc(userDocRef);
         if (userDocSnap.exists()) {
             currentUserUsername = userDocSnap.data().username;
-            profileUsernameInput.value = currentUserUsername; // Preenche o campo de perfil
+            profileUsernameInput.value = currentUserUsername;
         } else {
-            // Se o documento do usuário não existir (primeiro login, por exemplo), crie-o
-            // Também adiciona o e-mail como username inicial se não houver um
-            currentUserUsername = user.email.split('@')[0]; // Pega a parte antes do @
+            currentUserUsername = user.email.split('@')[0];
             await setDoc(userDocRef, {
                 email: user.email,
                 username: currentUserUsername
             });
         }
-        profileEmailDisplay.textContent = user.email; // Exibe o email no perfil
+        profileEmailDisplay.textContent = user.email;
 
-        // Carrega posts, usuários para chat, etc.
         loadPosts();
         loadUsersForChat();
         loadNotifications();
-        showSection(feedSection); // Mostra o feed por padrão ao logar
+        showSection(feedSection);
     } else {
         // Usuário deslogado
         loginBtn.style.display = "block";
@@ -159,13 +157,13 @@ onAuthStateChanged(auth, async (user) => {
         openNotificationsBtn.style.display = "none";
         openProfileBtn.style.display = "none";
         currentUserUsername = null;
-        postsContainer.innerHTML = ''; // Limpa o feed
-        chatMessagesDisplay.innerHTML = ''; // Limpa o chat
-        chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Limpa seleção de chat
-        notificationsList.innerHTML = ''; // Limpa notificações
-        notificationCount.textContent = '0'; // Reseta contador
+        postsContainer.innerHTML = '';
+        chatMessagesDisplay.innerHTML = '';
+        chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>';
+        notificationsList.innerHTML = '';
+        notificationCount.textContent = '0';
 
-        showSection(loginFormContainer); // Mostra o formulário de login
+        showSection(loginFormContainer);
     }
 });
 
@@ -196,7 +194,6 @@ registerSubmit.addEventListener("click", async () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Salvar nome de usuário no Firestore
         await setDoc(doc(db, "users", user.uid), {
             email: user.email,
             username: username
@@ -206,7 +203,7 @@ registerSubmit.addEventListener("click", async () => {
         registerUsername.value = "";
         registerEmail.value = "";
         registerPassword.value = "";
-        showSection(loginFormContainer); // Volta para login após cadastro
+        showSection(loginFormContainer);
     } catch (error) {
         console.error("Erro no cadastro:", error);
         showMessage(registerMessage, "Erro no cadastro: " + error.message, 'error');
@@ -237,9 +234,9 @@ registerBtn.addEventListener("click", () => showSection(registerFormContainer));
 publishPostBtn.addEventListener("click", async () => {
     const content = postContent.value.trim();
     const imageUrl = postImageUrl.value.trim();
-    const videoUrl = postVideoUrl.value.trim(); // Obtenha o valor do campo de vídeo
+    const videoUrl = postVideoUrl.value.trim();
 
-    if (!content && !imageUrl && !videoUrl) { // Inclua videoUrl na validação
+    if (!content && !imageUrl && !videoUrl) {
         showMessage(postMessage, "O post não pode ser vazio.", 'error');
         return;
     }
@@ -253,14 +250,17 @@ publishPostBtn.addEventListener("click", async () => {
         content: content,
         timestamp: serverTimestamp(),
         userId: auth.currentUser.uid,
-        username: currentUserUsername || auth.currentUser.email // Usa o username se disponível
+        username: currentUserUsername || auth.currentUser.email,
+        likedBy: [], // Inicializa array de usuários que curtiram
+        likesCount: 0, // Inicializa contador de likes
+        commentsCount: 0 // Inicializa contador de comentários
     };
 
-    let postType = 'text'; // Tipo padrão
+    let postType = 'text';
     if (imageUrl) {
         postData.imageUrl = imageUrl;
         postType = 'image';
-    } else if (videoUrl) { // Se houver URL de vídeo
+    } else if (videoUrl) {
         const youtubeId = extractYouTubeVideoId(videoUrl);
         const vimeoId = extractVimeoVideoId(videoUrl);
 
@@ -273,49 +273,101 @@ publishPostBtn.addEventListener("click", async () => {
             postData.videoId = vimeoId;
             postType = 'video';
         } else {
-            // Se não for YouTube nem Vimeo, trata como um link genérico
-            // Você pode querer validar URLs de vídeo não suportadas ou tratá-las de outra forma
-            // Por simplicidade aqui, podemos adicionar uma prévia de link básica ou simplesmente ignorar
-            // Se a URL não for reconhecida como YouTube/Vimeo, vamos tratá-la como um link genérico
             postData.linkPreview = { url: videoUrl, title: "Link de Vídeo", description: "Clique para assistir." };
             postType = 'link';
         }
     } else if (content.startsWith('http://') || content.startsWith('https://')) {
-        // Se o conteúdo em si for uma URL, tenta gerar uma prévia de link
-        // Esta parte requer um serviço de backend para buscar metadados de links.
-        // Se você não tiver um, isso não vai funcionar.
-        // Para o propósito deste exemplo, vamos remover a lógica de `fetchLinkPreview` aqui,
-        // focando em `imageUrl` e `videoUrl` explícitos.
-        // Se você tinha `fetchLinkPreview` e ele funcionava, reintegre-o aqui.
         postData.linkPreview = { url: content, title: "Link Compartilhado", description: "Clique para abrir." };
         postType = 'link';
     }
 
-    postData.postType = postType; // Salva o tipo do post
+    postData.postType = postType;
 
     try {
-        await addDoc(collection(db, "posts"), postData); // Usa addDoc para posts novos
+        await addDoc(collection(db, "posts"), postData);
         showMessage(postMessage, "Post publicado com sucesso!", 'success');
         postContent.value = "";
         postImageUrl.value = "";
-        postVideoUrl.value = ""; // Limpa o campo de vídeo
+        postVideoUrl.value = "";
     } catch (error) {
         console.error("Erro ao publicar post:", error);
         showMessage(postMessage, "Erro ao publicar post: " + error.message, 'error');
     }
 });
 
+// Função para atualizar o display de likes (cor do botão e contagem)
+function updateLikeDisplay(likeButtonElement, likedByArray, likesCount) {
+    const currentUserId = auth.currentUser ? auth.currentUser.uid : null;
+    const isLiked = likedByArray && currentUserId && likedByArray.includes(currentUserId);
+
+    if (isLiked) {
+        likeButtonElement.classList.add('liked'); // Adiciona classe para estilo visual (roxo)
+    } else {
+        likeButtonElement.classList.remove('liked'); // Remove classe
+    }
+    likeButtonElement.querySelector('.likes-count').textContent = likesCount;
+}
+
+// Função para configurar listeners de ações do post
+function setupPostActions(postElement, postId, post) {
+    const likeButton = postElement.querySelector('.like-button');
+    const commentButton = postElement.querySelector('.comment-button');
+
+    // Configurar display inicial do like
+    updateLikeDisplay(likeButton, post.likedBy || [], post.likesCount || 0);
+
+    // Listener de Like
+    likeButton.addEventListener('click', async () => {
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
+        if (!userId) {
+            showMessage(postMessage, "Faça login para curtir posts.", 'error');
+            return;
+        }
+
+        const postRef = doc(db, "posts", postId);
+        const currentLikedBy = post.likedBy || [];
+        const isLiked = currentLikedBy.includes(userId);
+
+        try {
+            if (isLiked) {
+                // Descurtir
+                await updateDoc(postRef, {
+                    likedBy: arrayRemove(userId),
+                    likesCount: increment(-1)
+                });
+            } else {
+                // Curtir
+                await updateDoc(postRef, {
+                    likedBy: arrayUnion(userId),
+                    likesCount: increment(1)
+                });
+                // Enviar notificação para o autor do post
+                if (userId !== post.userId) { // Não notifica se curtir o próprio post
+                    sendNotification(post.userId, `${currentUserUsername || auth.currentUser.email} curtiu seu post.`);
+                }
+            }
+        } catch (error) {
+            console.error("Erro ao curtir/descurtir:", error);
+            showMessage(postMessage, "Erro ao interagir com o post.", 'error');
+        }
+    });
+
+    // Listener de Comentário (apenas um placeholder por enquanto)
+    commentButton.addEventListener('click', () => {
+        // Implementar lógica de modal/campo de comentário aqui
+        showMessage(postMessage, "Funcionalidade de comentário em desenvolvimento!", 'info');
+    });
+}
+
+
 function loadPosts() {
-    // Ordenar do mais antigo para o mais novo (ascendente) para que o prepend coloque o mais novo no topo
     const q = query(collection(db, "posts"), orderBy("timestamp", "asc"));
 
-    // Mantenha um conjunto de IDs de posts já no DOM para evitar duplicação
-    const postIdsInDom = new Set();
+    const postIdsInDom = new Set(); // Mantém controle dos posts no DOM
 
     onSnapshot(q, (snapshot) => {
-        // Primeiro, lidar com remoções (se um post foi apagado do Firestore)
+        // Remove posts que foram deletados do Firestore
         const postIdsFromFirebase = new Set(snapshot.docs.map(doc => doc.id));
-        
         postsContainer.childNodes.forEach(node => {
             if (node.nodeType === 1 && node.dataset.postId && !postIdsFromFirebase.has(node.dataset.postId)) {
                 node.remove();
@@ -324,24 +376,22 @@ function loadPosts() {
         });
 
         snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
-                const post = change.doc.data();
-                const postId = change.doc.id;
+            const post = change.doc.data();
+            const postId = change.doc.id;
+            let postElement = document.querySelector(`[data-post-id="${postId}"]`);
 
+            if (change.type === "added") {
                 if (!postIdsInDom.has(postId)) { // Adiciona apenas se não estiver no DOM
-                    const postElement = document.createElement("div");
+                    postElement = document.createElement("div");
                     postElement.classList.add("post-card");
                     postElement.dataset.postId = postId; // Armazena o ID no elemento DOM
-    
-                    let mediaHtml = ''; // Para imagens ou vídeos
-                    let linkPreviewHtml = ''; // Para prévias de links
-    
-                    // Lógica para Imagem
+                    
+                    let mediaHtml = '';
+                    let linkPreviewHtml = '';
+                    
                     if (post.postType === 'image' && post.imageUrl) {
                         mediaHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
-                    }
-                    // Lógica para Vídeo (player embutido)
-                    else if (post.postType === 'video' && post.videoId) {
+                    } else if (post.postType === 'video' && post.videoId) {
                         if (post.videoType === 'youtube') {
                             mediaHtml = `
                                 <div class="video-container">
@@ -367,10 +417,73 @@ function loadPosts() {
                                 </div>
                             `;
                         }
+                    } else if (post.postType === 'link' && post.linkPreview && post.linkPreview.url) {
+                        linkPreviewHtml = `
+                            <div class="link-preview-box">
+                                ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
+                                <div class="link-preview-texts">
+                                    <strong>${post.linkPreview.title || 'Link'}</strong>
+                                    <p>${post.linkPreview.description || ''}</p>
+                                    <a href="${post.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${post.linkPreview.url}</a>
+                                </div>
+                            </div>
+                        `;
                     }
-                    // Lógica para Pré-visualização de Link (se houver, e não for vídeo/imagem explícitos)
-                    // Este bloco é para links gerais, não para players de vídeo
-                    else if (post.postType === 'link' && post.linkPreview && post.linkPreview.url) {
+
+                    postElement.innerHTML = `
+                        <h3>${post.username || post.userId}</h3>
+                        <p>${post.content}</p>
+                        ${mediaHtml}
+                        ${linkPreviewHtml}
+                        <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+                        <div class="post-actions">
+                            <button class="like-button">
+                                <span class="heart-icon">❤️</span> <span class="likes-count">${post.likesCount || 0}</span> Curtir
+                            </button>
+                            <button class="comment-button">
+                                <span class="comment-icon">💬</span> <span class="comments-count">${post.commentsCount || 0}</span> Comentar
+                            </button>
+                        </div>
+                    `;
+    
+                    postsContainer.prepend(postElement); // Adiciona o post no topo (mais recente)
+                    postIdsInDom.add(postId);
+                    setupPostActions(postElement, postId, post); // Configura listeners para o novo post
+                }
+            } else if (change.type === "modified") {
+                if (postElement) { // Verifica se o elemento já exte no DOM
+                    let mediaHtml = '';
+                    let linkPreviewHtml = '';
+    
+                    if (post.postType === 'image' && post.imageUrl) {
+                        mediaHtml = `<img src="${post.imageUrl}" alt="Post Image" class="post-image-preview">`;
+                    } else if (post.postType === 'video' && post.videoId) {
+                        if (post.videoType === 'youtube') {
+                            mediaHtml = `
+                                <div class="video-container">
+                                    <iframe
+                                        src="https://www.youtube.com/embed/${post.videoId}"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen
+                                        class="video-player">
+                                    </iframe>
+                                </div>
+                            `;
+                        } else if (post.videoType === 'vimeo') {
+                            mediaHtml = `
+                                <div class="video-container">
+                                    <iframe
+                                        src="https://player.vimeo.com/video/${post.videoId}"
+                                        frameborder="0"
+                                        allow="autoplay; fullscreen; picture-in-picture"
+                                        allowfullscreen
+                                        class="video-player">
+                                    </iframe>
+                                </div>
+                            `;
+                        }
+                    } else if (post.postType === 'link' && post.linkPreview && post.linkPreview.url) {
                         linkPreviewHtml = `
                             <div class="link-preview-box">
                                 ${post.linkPreview.image ? `<img src="${post.linkPreview.image}" class="link-preview-img">` : ''}
@@ -383,83 +496,27 @@ function loadPosts() {
                         `;
                     }
     
+                    // Atualiza o conteúdo HTML, mantendo os botões de ação
                     postElement.innerHTML = `
                         <h3>${post.username || post.userId}</h3>
                         <p>${post.content}</p>
-                        ${mediaHtml}     ${linkPreviewHtml} <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
-                        <div class="post-actions">
-                            </div>
-                    `;
-    
-                    postsContainer.prepend(postElement); // Adiciona o post no topo (mais recente)
-                    postIdsInDom.add(postId);
-                }
-            } else if (change.type === "modified") {
-                const updatedPost = change.doc.data();
-                const updatedPostId = change.doc.id;
-                const existingPostElement = document.querySelector(`[data-post-id="${updatedPostId}"]`);
-    
-                if (existingPostElement) {
-                    let mediaHtml = '';
-                    let linkPreviewHtml = '';
-    
-                    // Mesma lógica de mediaHtml/linkPreviewHtml do "added"
-                    if (updatedPost.postType === 'image' && updatedPost.imageUrl) {
-                        mediaHtml = `<img src="${updatedPost.imageUrl}" alt="Post Image" class="post-image-preview">`;
-                    } else if (updatedPost.postType === 'video' && updatedPost.videoId) {
-                        if (updatedPost.videoType === 'youtube') {
-                            mediaHtml = `
-                                <div class="video-container">
-                                    <iframe
-                                        src="https://www.youtube.com/embed/${updatedPost.videoId}"
-                                        frameborder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowfullscreen
-                                        class="video-player">
-                                    </iframe>
-                                </div>
-               `;
-                        } else if (updatedPost.videoType === 'vimeo') {
-                            mediaHtml = `
-                                <div class="video-container">
-                                    <iframe
-                                        src="https://player.vimeo.com/video/${updatedPost.videoId}"
-                                        frameborder="0"
-                                        allow="autoplay; fullscreen; picture-in-picture"
-                                        allowfullscreen
-                                        class="video-player">
-                                    </iframe>
-                                </div>
-                            `;
-                        }
-                    } else if (updatedPost.postType === 'link' && updatedPost.linkPreview && updatedPost.linkPreview.url) {
-                        linkPreviewHtml = `
-                            <div class="link-preview-box">
-                                ${updatedPost.linkPreview.image ? `<img src="${updatedPost.linkPreview.image}" class="link-preview-img">` : ''}
-                                <div class="link-preview-texts">
-                                    <strong>${updatedPost.linkPreview.title || 'Link'}</strong>
-                                    <p>${updatedPost.linkPreview.description || ''}</p>
-                                    <a href="${updatedPost.linkPreview.url}" target="_blank" style="color:#6A0DAD;">${updatedPost.linkPreview.url}</a>
-                                </div>
-                            </div>
-                        `;
-                    }
-    
-                    existingPostElement.innerHTML = `
-                        <h3>${updatedPost.username || updatedPost.userId}</h3>
-                        <p>${updatedPost.content}</p>
                         ${mediaHtml}
                         ${linkPreviewHtml}
-                        <small>${updatedPost.timestamp ? new Date(updatedPost.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
+                        <small>${post.timestamp ? new Date(post.timestamp.toDate()).toLocaleString() : 'Carregando...'}</small>
                         <div class="post-actions">
-                            </div>
+                            <button class="like-button">
+                                <span class="heart-icon">❤️</span> <span class="likes-count">${post.likesCount || 0}</span> Curtir
+                            </button>
+                            <button class="comment-button">
+                                <span class="comment-icon">💬</span> <span class="comments-count">${post.commentsCount || 0}</span> Comentar
+                            </button>
+                        </div>
                     `;
+                    setupPostActions(postElement, postId, post); // Re-configura listeners para o post modificado
                 }
             } else if (change.type === "removed") {
-                const removedPostId = change.doc.id;
-                const elementToRemove = document.querySelector(`[data-post-id="${removedPostId}"]`);
-                if (elementToRemove) {
-                    elementToRemove.remove();
+                if (postElement) {
+                    postElement.remove();
                     postIdsInDom.delete(removedPostId);
                 }
             }
@@ -470,7 +527,13 @@ function loadPosts() {
 
 // --- Lógica de Chat ---
 let currentChatRecipientId = null;
-let unsubscribeChatMessages = null; // Para poder desinscrever o listener anterior
+let unsubscribeChatMessages = null;
+
+// Nova função para gerar um ID de sala de chat consistente entre dois usuários
+function getChatRoomId(userId1, userId2) {
+    // Garante que o ID da sala seja sempre o mesmo, independente da ordem dos usuários
+    return userId1 < userId2 ? `${userId1}_${userId2}` : `${userId2}_${userId1}`;
+}
 
 chatRecipientSelect.addEventListener('change', (event) => {
     const selectedUserId = event.target.value;
@@ -479,9 +542,9 @@ chatRecipientSelect.addEventListener('change', (event) => {
         loadChatMessages(auth.currentUser.uid, selectedUserId);
     } else {
         currentChatRecipientId = null;
-        chatMessagesDisplay.innerHTML = ''; // Limpa mensagens se nenhum usuário for selecionado
+        chatMessagesDisplay.innerHTML = '';
         if (unsubscribeChatMessages) {
-            unsubscribeChatMessages(); // Desinscreve o listener anterior
+            unsubscribeChatMessages();
             unsubscribeChatMessages = null;
         }
     }
@@ -496,30 +559,20 @@ chatSendMessageBtn.addEventListener('click', async () => {
 
     const senderId = auth.currentUser.uid;
     const recipientId = currentChatRecipientId;
+    const chatRoomId = getChatRoomId(senderId, recipientId);
 
     try {
-        // Adiciona a mensagem para o remetente
-        await addDoc(collection(db, "chats", senderId, "messages"), {
-            to: recipientId,
-            from: senderId,
+        // Adiciona a mensagem à subcoleção 'messages' da sala de chat
+        await addDoc(collection(db, "privateChats", chatRoomId, "messages"), {
+            senderId: senderId,
+            recipientId: recipientId,
             content: messageContent,
             timestamp: serverTimestamp(),
-            read: false // Mensagem enviada, não lida ainda pelo destinatário
-        });
-
-        // Adiciona a mensagem para o destinatário (para facilitar a consulta)
-        // Isso cria uma cópia, pode ser otimizado com subcoleções compartilhadas
-        await addDoc(collection(db, "chats", recipientId, "messages"), {
-            to: recipientId,
-            from: senderId,
-            content: messageContent,
-            timestamp: serverTimestamp(),
-            read: false // Mensagem enviada, não lida ainda
+            read: false
         });
 
         chatMessageInput.value = "";
         showMessage(chatMessage, "Mensagem enviada!", 'success');
-        // A mensagem aparecerá automaticamente devido ao onSnapshot em loadChatMessages
     } catch (error) {
         console.error("Erro ao enviar mensagem:", error);
         showMessage(chatMessage, "Erro ao enviar mensagem: " + error.message, 'error');
@@ -527,14 +580,14 @@ chatSendMessageBtn.addEventListener('click', async () => {
 });
 
 async function loadUsersForChat() {
-    chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>'; // Limpa antes de carregar
+    chatRecipientSelect.innerHTML = '<option value="">Selecione um usuário</option>';
     const usersCollectionRef = collection(db, "users");
     try {
         const querySnapshot = await getDocs(usersCollectionRef);
         querySnapshot.forEach((doc) => {
             const user = doc.data();
             const userId = doc.id;
-            if (userId !== auth.currentUser.uid) { // Não listar a si mesmo
+            if (userId !== auth.currentUser.uid) {
                 const option = document.createElement("option");
                 option.value = userId;
                 option.textContent = user.username || user.email;
@@ -546,36 +599,30 @@ async function loadUsersForChat() {
     }
 }
 
-function loadChatMessages(userId1, userId2) {
+function loadChatMessages(currentUserUid, selectedRecipientId) {
     if (unsubscribeChatMessages) {
-        unsubscribeChatMessages(); // Desinscreve o listener anterior
+        unsubscribeChatMessages();
     }
 
-    // Consulta mensagens enviadas por userId1 para userId2 OU enviadas por userId2 para userId1
-    // Simplificado: estamos lendo a subcoleção de 'messages' do usuário logado
-    // O ideal seria uma coleção de chat compartilhada ou uma lógica mais robusta
-    const messagesRef = collection(db, "chats", userId1, "messages");
-    const q = query(
-        messagesRef,
-        where("to", "==", userId2),
-        orderBy("timestamp", "asc")
-    );
+    const chatRoomId = getChatRoomId(currentUserUid, selectedRecipientId);
+    const messagesRef = collection(db, "privateChats", chatRoomId, "messages");
+    const q = query(messagesRef, orderBy("timestamp", "asc"));
 
     unsubscribeChatMessages = onSnapshot(q, (snapshot) => {
-        chatMessagesDisplay.innerHTML = ''; // Limpa antes de renderizar
+        chatMessagesDisplay.innerHTML = '';
         snapshot.forEach((doc) => {
             const msg = doc.data();
             const messageElement = document.createElement("div");
             messageElement.classList.add("chat-message");
-            if (msg.from === auth.currentUser.uid) {
-                messageElement.classList.add("sent"); // Mensagens enviadas pelo usuário logado
+            if (msg.senderId === currentUserUid) {
+                messageElement.classList.add("sent");
             } else {
-                messageElement.classList.add("received"); // Mensagens recebidas
+                messageElement.classList.add("received");
             }
-            messageElement.textContent = `${msg.content} (${new Date(msg.timestamp.toDate()).toLocaleString()})`;
+            // Inclui o nome do remetente
+            messageElement.textContent = `${(msg.senderId === currentUserUid ? currentUserUsername : (chatRecipientSelect.options[chatRecipientSelect.selectedIndex].text)) || msg.senderId}: ${msg.content} (${new Date(msg.timestamp.toDate()).toLocaleString()})`;
             chatMessagesDisplay.appendChild(messageElement);
         });
-        // Rola para a mensagem mais recente
         chatMessagesDisplay.scrollTop = chatMessagesDisplay.scrollHeight;
     }, (error) => {
         console.error("Erro ao carregar mensagens do chat:", error);
@@ -592,7 +639,7 @@ function loadNotifications() {
     const q = query(notificationsRef, orderBy("timestamp", "desc"));
 
     onSnapshot(q, (snapshot) => {
-        notificationsList.innerHTML = ''; // Limpa antes de renderizar
+        notificationsList.innerHTML = '';
         let unreadCount = 0;
         snapshot.forEach((doc) => {
             const notification = doc.data();
@@ -608,14 +655,11 @@ function loadNotifications() {
             notificationElement.textContent = notification.message + " (" + new Date(notification.timestamp.toDate()).toLocaleString() + ")";
             notificationsList.appendChild(notificationElement);
 
-            // Marcar como lido ao ser visualizado (ou ao clicar, se preferir)
             if (!notification.read) {
-                // Idealmente, você pode querer um botão "Marcar como lido" ou marcar ao clicar
-                // Por enquanto, vamos marcar como lido quando o usuário vê a notificação.
                 updateDoc(doc.ref, { read: true }).catch(e => console.error("Erro ao marcar notificação como lida:", e));
             }
         });
-        notificationCount.textContent = unreadCount.toString(); // Atualiza o contador de notificações não lidas
+        notificationCount.textContent = unreadCount.toString();
     }, (error) => {
         console.error("Erro ao carregar notificações:", error);
     });
@@ -653,7 +697,7 @@ saveProfileBtn.addEventListener('click', async () => {
         await updateDoc(userDocRef, {
             username: newUsername
         });
-        currentUserUsername = newUsername; // Atualiza a variável global
+        currentUserUsername = newUsername;
         showMessage(profileMessage, "Nome de usuário atualizado com sucesso!", 'success');
     } catch (error) {
         console.error("Erro ao atualizar perfil:", error);
@@ -664,10 +708,6 @@ saveProfileBtn.addEventListener('click', async () => {
 
 // Inicialização: Ao carregar a página, se não houver um usuário logado, mostra o formulário de login.
 document.addEventListener('DOMContentLoaded', () => {
-    // Garante que todos os formulários estejam escondidos no início
     hideAllForms();
-
-    // O onAuthStateChanged já lida com qual seção mostrar inicialmente
-    // dependendo do estado de autenticação.
     console.log("DOM totalmente carregado.");
 });
